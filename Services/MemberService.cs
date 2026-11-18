@@ -1,0 +1,240 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using GymCrudApp.Data;
+using GymCrudApp.Models;
+using GymCrudApp.ViewModels.Members;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
+namespace GymCrudApp.Services
+{
+    public class MemberService : IMemberService
+    {
+        private readonly GymDbContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
+
+        public MemberService(GymDbContext context, UserManager<IdentityUser> userManager)
+        {
+            _context = context;
+            _userManager = userManager;
+        }
+
+        public async Task<MemberIndexViewModel> GetPagedAsync(string? searchTerm, int page, int pageSize = 10)
+        {
+            if (page < 1) page = 1;
+
+            var query = _context.Members.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var term = searchTerm.Trim();
+                query = query.Where(m =>
+                    m.fullName.Contains(term) ||
+                    m.userEmail.Contains(term) ||
+                    m.contactNumber.Contains(term));
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var items = await query
+                .OrderByDescending(m => m.isActive)
+                .ThenBy(m => m.fullName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(m => new MemberListItemViewModel
+                {
+                    MemberId = m.memberId,
+                    FullName = m.fullName,
+                    Email = m.userEmail,
+                    ContactNumber = m.contactNumber,
+                    JoinDate = m.joinDate,
+                    IsActive = m.isActive
+                })
+                .ToListAsync();
+
+            return new MemberIndexViewModel
+            {
+                Members = items,
+                SearchTerm = searchTerm,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages
+            };
+        }
+
+        public async Task<MemberDetailsViewModel?> GetByIdAsync(int id)
+        {
+            return await _context.Members
+                .AsNoTracking()
+                .Where(m => m.memberId == id)
+                .Select(m => new MemberDetailsViewModel
+                {
+                    MemberId = m.memberId,
+                    UserId = m.userId,
+                    FullName = m.fullName,
+                    Email = m.userEmail,
+                    ContactNumber = m.contactNumber,
+                    Birthdate = m.birthdate,
+                    JoinDate = m.joinDate,
+                    IsActive = m.isActive
+                })
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<MemberEditViewModel?> GetForEditAsync(int id)
+        {
+            return await _context.Members
+                .AsNoTracking()
+                .Where(m => m.memberId == id)
+                .Select(m => new MemberEditViewModel
+                {
+                    MemberId = m.memberId,
+                    FullName = m.fullName,
+                    Email = m.userEmail,
+                    ContactNumber = m.contactNumber,
+                    Birthdate = m.birthdate,
+                    IsActive = m.isActive
+                })
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<(bool Success, string? ErrorMessage)> CreateAsync(MemberCreateViewModel model)
+        {
+            if (await _userManager.FindByEmailAsync(model.Email) != null ||
+                await _context.Users.AnyAsync(u => u.userEmail == model.Email))
+            {
+                return (false, "An account with this email already exists.");
+            }
+
+            var identityUser = new IdentityUser
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                EmailConfirmed = true
+            };
+
+            var createResult = await _userManager.CreateAsync(identityUser, model.InitialPassword);
+            if (!createResult.Succeeded)
+            {
+                var errors = string.Join(" ", createResult.Errors.Select(e => e.Description));
+                return (false, errors);
+            }
+
+            try
+            {
+                await _userManager.AddToRoleAsync(identityUser, "Member");
+
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                var appUser = new Users
+                {
+                    userEmail = model.Email,
+                    passwordHash = identityUser.PasswordHash ?? "MANAGED_BY_IDENTITY",
+                    role = "Member",
+                    isActive = true
+                };
+
+                _context.Users.Add(appUser);
+                await _context.SaveChangesAsync();
+
+                var member = new Members
+                {
+                    userId = appUser.userId,
+                    fullName = model.FullName,
+                    contactNumber = model.ContactNumber,
+                    birthdate = model.Birthdate,
+                    userEmail = model.Email,
+                    joinDate = DateTime.Today,
+                    isActive = true
+                };
+
+                _context.Members.Add(member);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+                return (true, null);
+            }
+            catch
+            {
+                await _userManager.DeleteAsync(identityUser);
+                return (false, "Failed to save member profile. Please try again.");
+            }
+        }
+
+        public async Task<(bool Success, string? ErrorMessage)> UpdateAsync(MemberEditViewModel model)
+        {
+            var member = await _context.Members.FirstOrDefaultAsync(m => m.memberId == model.MemberId);
+            if (member == null)
+            {
+                return (false, "Member not found.");
+            }
+
+            var emailInUse = await _context.Users
+                .AnyAsync(u => u.userEmail == model.Email && u.userId != member.userId);
+            if (emailInUse)
+            {
+                return (false, "Another account is already using this email address.");
+            }
+
+            var oldEmail = member.userEmail;
+            member.fullName = model.FullName;
+            member.contactNumber = model.ContactNumber;
+            member.birthdate = model.Birthdate;
+            member.userEmail = model.Email;
+            member.isActive = model.IsActive;
+
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.userId == member.userId);
+            if (appUser != null)
+            {
+                appUser.userEmail = model.Email;
+                appUser.isActive = model.IsActive;
+            }
+
+            var identityUser = await _userManager.FindByEmailAsync(oldEmail);
+            if (identityUser != null)
+            {
+                if (!string.Equals(oldEmail, model.Email, StringComparison.OrdinalIgnoreCase))
+                {
+                    identityUser.Email = model.Email;
+                    identityUser.UserName = model.Email;
+                }
+                identityUser.LockoutEnd = model.IsActive ? null : DateTimeOffset.MaxValue;
+                await _userManager.UpdateAsync(identityUser);
+            }
+
+            await _context.SaveChangesAsync();
+            return (true, null);
+        }
+
+        public async Task<bool> DeactivateAsync(int id)
+        {
+            var member = await _context.Members.FirstOrDefaultAsync(m => m.memberId == id);
+            if (member == null)
+            {
+                return false;
+            }
+
+            member.isActive = false;
+
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.userId == member.userId);
+            if (appUser != null)
+            {
+                appUser.isActive = false;
+            }
+
+            var identityUser = await _userManager.FindByEmailAsync(member.userEmail);
+            if (identityUser != null)
+            {
+                identityUser.LockoutEnd = DateTimeOffset.MaxValue;
+                await _userManager.UpdateAsync(identityUser);
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+    }
+}

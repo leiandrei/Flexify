@@ -1,0 +1,15 @@
+@model GymCrudApp.ViewModels.Members.MemberDetailsViewModel
+@{
+    ViewData["Title"] = "Deactivate Member";
+}
+
+<div class="alert alert-warning mt-3">
+    <h3>Deactivate Member</h3>
+    <p>Are you sure you want to deactivate <strong>@Model.FullName</strong> (@Model.Email)? Their history will be preserved, but they will no longer be able to log in.</p>
+</div>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="MemberId" />
+    <button type="submit" class="btn btn-danger">Confirm Deactivate</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>

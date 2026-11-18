@@ -12,5 +12,9 @@ namespace GymCrudApp.ViewModels.Members
         public DateTime Birthdate { get; set; }
         public DateTime JoinDate { get; set; }
         public bool IsActive { get; set; }
+        public string? CurrentPlanName { get; set; }
+        public DateTime? MembershipEndDate { get; set; }
+        public int? DaysRemaining { get; set; }
+        public string MembershipStatus { get; set; } = "No Membership";
     }
 }

@@ -68,21 +68,49 @@ namespace GymCrudApp.Services
 
         public async Task<MemberDetailsViewModel?> GetByIdAsync(int id)
         {
-            return await _context.Members
+            var member = await _context.Members
                 .AsNoTracking()
-                .Where(m => m.memberId == id)
-                .Select(m => new MemberDetailsViewModel
-                {
-                    MemberId = m.memberId,
-                    UserId = m.userId,
-                    FullName = m.fullName,
-                    Email = m.userEmail,
-                    ContactNumber = m.contactNumber,
-                    Birthdate = m.birthdate,
-                    JoinDate = m.joinDate,
-                    IsActive = m.isActive
-                })
+                .FirstOrDefaultAsync(m => m.memberId == id);
+
+            if (member == null) return null;
+
+            var latest = await _context.Memberships
+                .AsNoTracking()
+                .Include(ms => ms.Plan)
+                .Where(ms => ms.memberId == id)
+                .OrderByDescending(ms => ms.isActive)
+                .ThenByDescending(ms => ms.endDate)
                 .FirstOrDefaultAsync();
+
+            var today = DateTime.Today;
+            string status = "No Membership";
+            int? daysRemaining = null;
+
+            if (latest != null)
+            {
+                var diff = (latest.endDate.Date - today).Days;
+                daysRemaining = diff < 0 ? 0 : diff;
+                status = !latest.isActive ? "Inactive"
+                    : diff < 0 ? "Expired"
+                    : diff <= 7 ? "Expiring"
+                    : "Active";
+            }
+
+            return new MemberDetailsViewModel
+            {
+                MemberId = member.memberId,
+                UserId = member.userId,
+                FullName = member.fullName,
+                Email = member.userEmail,
+                ContactNumber = member.contactNumber,
+                Birthdate = member.birthdate,
+                JoinDate = member.joinDate,
+                IsActive = member.isActive,
+                CurrentPlanName = latest?.Plan?.planName,
+                MembershipEndDate = latest?.endDate,
+                DaysRemaining = daysRemaining,
+                MembershipStatus = status
+            };
         }
 
         public async Task<MemberEditViewModel?> GetForEditAsync(int id)

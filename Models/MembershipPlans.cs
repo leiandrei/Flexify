@@ -27,6 +27,11 @@ namespace GymCrudApp.Models
         [Required(ErrorMessage = "This field is required. Please provide a plan description.")]
         [StringLength(500, MinimumLength = 10, ErrorMessage = "Description must be between 10 and 500 characters long.")]
         public string planDescription { get; set; } = string.Empty;
+        
+        // duration in days
+        [Required(ErrorMessage = "This field is required. Please provide the plan duration in days.")]
+        [Range(1, 3650, ErrorMessage = "Duration must be between 1 and 3,650 days.")]
+        public int durationDays { get; set; } = 30;
 
         public bool isActive { get; set; } = true;
     }

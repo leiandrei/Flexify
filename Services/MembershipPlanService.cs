@@ -28,6 +28,7 @@ namespace GymCrudApp.Services
                     PlanId = p.planId,
                     PlanName = p.planName,
                     PlanPrice = p.planPrice,
+                    DurationDays = p.durationDays,
                     PlanDescription = p.planDescription,
                     IsActive = p.isActive
                 })
@@ -44,6 +45,7 @@ namespace GymCrudApp.Services
                     PlanId = p.planId,
                     PlanName = p.planName,
                     PlanPrice = p.planPrice,
+                    DurationDays = p.durationDays,
                     PlanDescription = p.planDescription,
                     IsActive = p.isActive
                 })
@@ -60,6 +62,7 @@ namespace GymCrudApp.Services
                     PlanId = p.planId,
                     PlanName = p.planName,
                     PlanPrice = p.planPrice,
+                    DurationDays = p.durationDays,
                     PlanDescription = p.planDescription,
                     IsActive = p.isActive
                 })
@@ -81,6 +84,7 @@ namespace GymCrudApp.Services
             {
                 planName = trimmedName,
                 planPrice = model.PlanPrice,
+                durationDays = model.DurationDays,
                 planDescription = model.PlanDescription.Trim(),
                 isActive = model.IsActive
             };
@@ -109,6 +113,7 @@ namespace GymCrudApp.Services
 
             plan.planName = trimmedName;
             plan.planPrice = model.PlanPrice;
+            plan.durationDays = model.DurationDays;
             plan.planDescription = model.PlanDescription.Trim();
             plan.isActive = model.IsActive;
 

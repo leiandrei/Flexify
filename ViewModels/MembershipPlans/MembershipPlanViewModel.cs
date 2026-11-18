@@ -15,6 +15,9 @@ namespace GymCrudApp.ViewModels.MembershipPlans
 
         [Display(Name = "Description")]
         public string PlanDescription { get; set; } = string.Empty;
+        
+        [Display(Name = "Duration (Days)")]
+        public int DurationDays { get; set; }
 
         [Display(Name = "Active")]
         public bool IsActive { get; set; }

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="GymCrudApp.csproj" />
+  <Project Path="GymCrudApp.Tests/GymCrudApp.Tests.csproj" />
+</Solution>

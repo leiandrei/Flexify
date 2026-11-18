@@ -20,4 +20,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="GymCrudApp.Tests\**" />
+    <Content Remove="GymCrudApp.Tests\**" />
+    <EmbeddedResource Remove="GymCrudApp.Tests\**" />
+    <None Remove="GymCrudApp.Tests\**" />
+  </ItemGroup>
+
 </Project>

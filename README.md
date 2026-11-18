@@ -1,1 +1,2 @@
-## 
+## Flexify
+A CRUD (Create, Read, Update, and Delete) Web Application for automating and facilitating business processes, and effective promotion of gym facilities for the Local Gyms in the Philippines.

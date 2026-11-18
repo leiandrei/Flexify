@@ -1,16 +1,16 @@
 **Wed Nov 18**
 
 * ✅ Decide the .NET and Visual Studio version with your team and instructor; add a `global.json`
-* \[ ] Create the public GitHub repo with a README and a Visual Studio `.gitignore`; create `main` and `develop`; agree the branch and commit rules
-* \[ ] On `feature/project-setup`: create the ASP.NET Core MVC project, add the EF Core SQL Server and Identity packages, confirm the SQL Server connection, open a pull request into `develop`
+* ✅ Create the public GitHub repo with a README and a Visual Studio `.gitignore`; create `main` and `develop`; agree the branch and commit rules
+* ✅ On `feature/project-setup`: create the ASP.NET Core MVC project, add the EF Core SQL Server and Identity packages, confirm the SQL Server connection, open a pull request into `develop`
 * \[ ] Write 15 to 20 user stories (as Admin, Staff, Member and Visitor) in `docs/requirements.md`
 * \[ ] Copy the instructor's report template into `docs/report/` and start `docs/report-notes.md`
 
 **Thu Nov 19**
 
-* \[ ] On `feature/data-model`: write the entities, `GymDbContext`, relationships and the first migration; run `Update-Database`
-* \[ ] Draw the ERD and save it in `docs/`
-* \[ ] Seed the three roles, the admin account and demo data with a seed class; merge the pull request
+* ✅ On `feature/data-model`: write the entities, `GymDbContext`, relationships and the first migration; run `Update-Database`
+*  [ ] Draw the ERD and save it in `docs/`
+* ✅ Seed the three roles, the admin account and demo data with a seed class; merge the pull request
 * \[ ] Build the layout shell: navbar that changes by role, footer, shared styles
 * \[ ] Sketch wireframes: landing page, register and login, member portal, admin dashboard, check-in screen
 

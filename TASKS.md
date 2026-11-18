@@ -48,13 +48,13 @@ Every module follows the same pattern: a feature branch, an entity, an interface
 
 **Tue Nov 24: payments**
 
-- [ ] Record, list (filter by date and member), edit and void with a confirmation page; membership and payment save in one transaction
-- [ ] Test cases for amounts and voiding
+- ✅ Record, list (filter by date and member), edit and void with a confirmation page; membership and payment save in one transaction
+- ✅ Test cases for amounts and voiding
 
 **Wed Nov 25: attendance**
 
-- [ ] Staff check-in by member search, check-out button, list, admin delete
-- [ ] Warn or block when the membership is expired; one open check-in per member per day; test cases for both
+- ✅ Staff check-in by member search, check-out button, list, admin delete
+- ✅ Warn or block when the membership is expired; one open check-in per member per day; test cases for both
 
 **Thu Nov 26: access control pass**
 

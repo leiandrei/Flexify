@@ -1,8 +1,8 @@
 **Wed Nov 18**
 
 * ✅ Decide the .NET and Visual Studio version with your team and instructor; add a `global.json`
-* \[ ] Create the public GitHub repo with a README and a Visual Studio `.gitignore`; create `main` and `develop`; agree the branch and commit rules
-* \[ ] On `feature/project-setup`: create the ASP.NET Core MVC project, add the EF Core SQL Server and Identity packages, confirm the SQL Server connection, open a pull request into `develop`
+* ✅ Create the public GitHub repo with a README and a Visual Studio `.gitignore`; create `main` and `develop`; agree the branch and commit rules
+* ✅ On `feature/project-setup`: create the ASP.NET Core MVC project, add the EF Core SQL Server and Identity packages, confirm the SQL Server connection, open a pull request into `develop`
 * \[ ] Write 15 to 20 user stories (as Admin, Staff, Member and Visitor) in `docs/requirements.md`
 * \[ ] Copy the instructor's report template into `docs/report/` and start `docs/report-notes.md`
 

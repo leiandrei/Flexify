@@ -44,7 +44,7 @@ Every module follows the same pattern: a feature branch, an entity, an interface
 
 - ✅ Assign a plan to a member: `EndDate` = `StartDate` + `DurationDays`
 - ✅ Computed Status and Days Remaining in the service, shown on member details
-- [ ] Create the xUnit test project; test days remaining and status, including the expired and expiring cases
+- ✅ Create the xUnit test project; test days remaining and status, including the expired and expiring cases
 
 **Tue Nov 24: payments**
 

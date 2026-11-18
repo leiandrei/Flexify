@@ -40,6 +40,7 @@ builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 builder.Services.AddControllersWithViews();
 

@@ -53,6 +53,10 @@ namespace GymCrudApp.Models
         public string? ocrRawText { get; set; }
 
         public bool isVoided { get; set; } = false;
+        
+        [Required(ErrorMessage = "This field is required. Please provide a payment date.")]
+        [DataType(DataType.DateTime)]
+        public DateTime paymentDate { get; set; } = DateTime.Now;
 
         // foreign key linking to Staff table
         [Required(ErrorMessage = "This field is required. Please specify the recording staff member.")]

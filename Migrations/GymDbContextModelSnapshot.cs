@@ -16,7 +16,7 @@ partial class GymDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261118155653_AddDurationDaysToMembershipPlans";
+    public override string LastMigrationId => "20261118165200_AddPaymentsDateToPayments";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -184,6 +184,9 @@ partial class GymDbContextModelSnapshot : ModelSnapshot
 
                 b.Property<string>("ocrRawText")
                     .HasColumnType("nvarchar(max)");
+
+                b.Property<DateTime>("paymentDate")
+                    .HasColumnType("datetime2");
 
                 b.Property<string>("paymentType")
                     .IsRequired()

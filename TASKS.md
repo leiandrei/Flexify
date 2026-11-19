@@ -58,12 +58,12 @@ Every module follows the same pattern: a feature branch, an entity, an interface
 
 **Thu Nov 26: access control pass**
 
-- [ ] Apply role attributes across every controller; test the role-by-feature matrix and fix gaps on `fix/*` branches
-- [ ] Enrich the seed data
+- ✅ Apply role attributes across every controller; test the role-by-feature matrix and fix gaps on `fix/*` branches
+- ✅ Enrich the seed data
 
 **Fri Nov 27: sprint 1 review**
 
-- [ ] Run every sprint 1 test case and record actual results; log bugs and fix them on `fix/*` branches
+- ✅ Run every sprint 1 test case and record actual results; log bugs and fix them on `fix/*` branches
 - [ ] Merge `develop` into `main` and tag `v0.1.0`
 - [ ] Report: MVC trace for the Members module, and Git evidence (branch list, network graph, pull requests)
 

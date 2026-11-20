@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using GymCrudApp.Data;
 using GymCrudApp.Models;
 using GymCrudApp.ViewModels.Account;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -144,45 +147,64 @@ namespace GymCrudApp.Controllers
         public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
-
             if (!ModelState.IsValid)
             {
                 return View(model);
             }
 
-            // lockoutOnFailure: true increments failed attempts and locks after MaxFailedAccessAttempts
-            var result = await _signInManager.PasswordSignInAsync(
-                model.Email,
-                model.Password,
-                model.RememberMe,
-                lockoutOnFailure: true);
+            var normalizedEmail = model.Email.Trim();
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.userEmail == normalizedEmail && u.isActive);
 
-            if (result.Succeeded)
+            if (user == null)
             {
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-                {
-                    return Redirect(returnUrl);
-                }
-
-                var user = await _userManager.FindByEmailAsync(model.Email);
-                if (user != null)
-                {
-                    return await RedirectByRoleAsync(user);
-                }
-
-                return RedirectToAction("Index", "Home");
-            }
-
-            if (result.IsLockedOut)
-            {
-                ModelState.AddModelError(string.Empty, "Account locked due to multiple failed login attempts. Try again in 5 minutes.");
+                ModelState.AddModelError(string.Empty, "Invalid email or password.");
                 return View(model);
             }
 
-            ModelState.AddModelError(string.Empty, "Invalid email or password.");
-            return View(model);
+            var hasher = new PasswordHasher<Users>();
+            var verification = hasher.VerifyHashedPassword(user, user.passwordHash, model.Password);
+            if (verification == PasswordVerificationResult.Failed)
+            {
+                ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                return View(model);
+            }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.userId.ToString()),
+                new Claim(ClaimTypes.Name, user.userEmail),
+                new Claim(ClaimTypes.Email, user.userEmail),
+                new Claim(ClaimTypes.Role, user.role)
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                principal,
+                new AuthenticationProperties { IsPersistent = model.RememberMe });
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+
+            return RedirectToRoleHome(user.role);
         }
 
+        private IActionResult RedirectToRoleHome(string role)
+        {
+            return role switch
+            {
+                "Admin" => RedirectToAction("Index", "AdminDashboard"),
+                "Staff" => RedirectToAction("Index", "Attendance"),
+                "Member" => RedirectToAction("Index", "MemberPortal"),
+                _ => RedirectToAction("Index", "Home")
+            };
+        }
+        
         // POST: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]

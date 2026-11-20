@@ -73,13 +73,13 @@ SDLC stage: implementation and testing, sprint 2. Goal: members see their own st
 
 **Sat Nov 28: member portal**
 
-- [ ] Home card with status, days remaining and expiry date; payment history and attendance history for the signed-in member only
-- [ ] Cross-member access test (member A opens member B's URL and fails)
+- ✅ Home card with status, days remaining and expiry date; payment history and attendance history for the signed-in member only
+- ✅ Cross-member access test (member A opens member B's URL and fails)
 
 **Sun Nov 29: admin dashboard**
 
-- [ ] Number cards: active members, expiring in 7 days, revenue this month, check-ins today, new members
-- [ ] Chart.js charts for check-ins and revenue, only if time allows
+- ✅ Number cards: active members, expiring in 7 days, revenue this month, check-ins today, new members
+- ✅ Chart.js charts for check-ins and revenue, only if time allows
 
 **Mon Nov 30: tier 1 complete**
 

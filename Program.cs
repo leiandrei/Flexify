@@ -36,18 +36,19 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 // register the services
 builder.Services.AddScoped<DbInitializer>();
-builder.Services.AddScoped<IMemberService, MemberService>();
-builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
-builder.Services.AddScoped<IStaffService, StaffService>();
 
+// domain Services
+builder.Services.AddScoped<IMemberService, MemberService>();
+builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 
+// feature & background Services
 builder.Services.AddScoped<IMemberPortalService, MemberPortalService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<ILandingPageService, LandingPageService>();
-
 builder.Services.AddScoped<IRenewalService, RenewalService>();
 builder.Services.AddHostedService<MembershipExpiryBackgroundService>();
 

@@ -58,6 +58,7 @@ namespace GymCrudApp.ViewModels.Renewals
     {
         public bool Succeeded { get; set; }
         public string? ErrorMessage { get; set; }
+        public string? MemberName { get; set; }
         public int? NewMembershipId { get; set; }
         public int? NewPaymentId { get; set; }
         public DateTime? NewStartDate { get; set; }

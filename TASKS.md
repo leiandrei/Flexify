@@ -88,14 +88,14 @@ SDLC stage: implementation and testing, sprint 2. Goal: members see their own st
 
 **Tue Dec 1: public landing page**
 
-- [ ] Landing page: hero, plans and prices read from MembershipPlans, facility info, contact details, links to Register and Login (no new table needed)
-- [ ] Check it at phone width
+- ✅ Landing page: hero, plans and prices read from MembershipPlans, facility info, contact details, links to Register and Login (no new table needed)
+- ✅ Check it at phone width
 
 **Wed Dec 2: expiry and renewal**
 
-- [ ] Status shown everywhere as Active, Expiring or Expired; an expiring-soon list for staff
-- [ ] One-click renew using the renewal rule, which also creates the payment; xUnit tests for the renewal date
-- [ ] Optional: a daily background service that flags expired memberships
+- ✅ Status shown everywhere as Active, Expiring or Expired; an expiring-soon list for staff
+- ✅ One-click renew using the renewal rule, which also creates the payment; xUnit tests for the renewal date
+- ✅ Optional: a daily background service that flags expired memberships
 
 **Thu Dec 3: SOLID refactor and tests**
 

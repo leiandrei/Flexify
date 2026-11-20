@@ -1,103 +1,88 @@
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using GymCrudApp.Data;
 using GymCrudApp.Services;
 using GymCrudApp.ViewModels.Renewals;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
-namespace GymCrudApp.Controllers;
-
-[Authorize(Roles = "Admin,Staff")]
-public class RenewalsController : Controller
+namespace GymCrudApp.Controllers
 {
-    private readonly IRenewalService _renewalService;
-    private readonly GymDbContext _context;
-
-    public RenewalsController(IRenewalService renewalService, GymDbContext context)
+    [Authorize(Roles = "Admin,Staff")]
+    public class RenewalsController : Controller
     {
-        _renewalService = renewalService;
-        _context = context;
-    }
+        private readonly IRenewalService _renewalService;
 
-    [HttpGet]
-    public async Task<IActionResult> Index()
-    {
-        var expiringMembers = await _renewalService.GetExpiringSoonMembersAsync(
-            withinDays: 7,
-            includeRecentlyExpired: true);
-
-        return View(expiringMembers);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> Renew(int id, int? planId = null)
-    {
-        var vm = await _renewalService.PrepareRenewalFormAsync(id, planId);
-        if (vm == null)
+        public RenewalsController(IRenewalService renewalService)
         {
-            return NotFound();
+            _renewalService = renewalService;
         }
 
-        return View(vm);
-    }
+        [HttpGet]
+        public async Task<IActionResult> Index()
+        {
+            var expiringMembers = await _renewalService.GetExpiringSoonMembersAsync(
+                withinDays: 7,
+                includeRecentlyExpired: true);
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Renew(OneClickRenewalViewModel model)
-    {
-        if (!ModelState.IsValid)
+            return View(expiringMembers);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Renew(int id, int? planId = null)
+        {
+            var vm = await _renewalService.PrepareRenewalFormAsync(id, planId);
+            if (vm == null) return NotFound();
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Renew(OneClickRenewalViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return await RedisplayAsync(model);
+
+            var staffId = await ResolveCurrentStaffIdAsync();
+            if (staffId is null)
+            {
+                ModelState.AddModelError(string.Empty, "Your account isn't linked to a staff profile.");
+                return await RedisplayAsync(model);
+            }
+
+            var result = await _renewalService.RenewMembershipAsync(model, staffId.Value);
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Unable to complete renewal.");
+                return await RedisplayAsync(model);
+            }
+
+            TempData["SuccessMessage"] = $"Renewed {result.MemberName}'s membership through {result.NewEndDate:MMM dd, yyyy}.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<IActionResult> RedisplayAsync(OneClickRenewalViewModel model)
         {
             var refreshed = await _renewalService.PrepareRenewalFormAsync(model.MemberId, model.PlanId);
-            if (refreshed != null)
-            {
-                model.AvailablePlans = refreshed.AvailablePlans;
-            }
+            if (refreshed == null) return NotFound();
+
+            model.AvailablePlans = refreshed.AvailablePlans;
+            model.MemberName = refreshed.MemberName;
+            model.CurrentPlanName = refreshed.CurrentPlanName;
+            model.CurrentEndDate = refreshed.CurrentEndDate;
+            model.CurrentStatus = refreshed.CurrentStatus;
+            model.ProjectedStartDate = refreshed.ProjectedStartDate;
+            model.ProjectedEndDate = refreshed.ProjectedEndDate;
 
             return View(model);
         }
 
-        var staffId = await ResolveCurrentStaffIdAsync();
-        var result = await _renewalService.RenewMembershipAsync(model, staffId);
-
-        if (!result.Succeeded)
+        private async Task<int?> ResolveCurrentStaffIdAsync()
         {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Unable to complete renewal.");
-            var refreshed = await _renewalService.PrepareRenewalFormAsync(model.MemberId, model.PlanId);
-            if (refreshed != null)
-            {
-                model.AvailablePlans = refreshed.AvailablePlans;
-            }
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+                return null;
 
-            return View(model);
+            return await _renewalService.GetStaffIdByUserIdAsync(userId);
         }
-
-        TempData["SuccessMessage"] = $"Renewed {model.MemberName}'s membership through {result.NewEndDate:MMM dd, yyyy}.";
-        return RedirectToAction(nameof(Index));
-    }
-
-    private async Task<int> ResolveCurrentStaffIdAsync()
-    {
-        var rawUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (int.TryParse(rawUserId, out var userId))
-        {
-            var staff = await _context.Staff
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.userId == userId);
-
-            if (staff != null)
-            {
-                return staff.StaffID;
-            }
-        }
-
-        var fallbackStaffId = await _context.Staff
-            .AsNoTracking()
-            .Select(s => s.StaffID)
-            .FirstOrDefaultAsync();
-
-        return fallbackStaffId > 0 ? fallbackStaffId : 1;
     }
 }

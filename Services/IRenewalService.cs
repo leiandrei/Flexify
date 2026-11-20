@@ -23,5 +23,6 @@ namespace GymCrudApp.Services
             DateTime? asOfDate = null);
 
         Task<int> DeactivateExpiredMembershipsAsync(DateTime? asOfDate = null);
+        Task<int?> GetStaffIdByUserIdAsync(int userId);
     }
 }

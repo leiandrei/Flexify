@@ -223,6 +223,7 @@ namespace GymCrudApp.Services
                 return new RenewalResult
                 {
                     Succeeded = true,
+                    MemberName = member.fullName,
                     NewMembershipId = newMembership.membershipId,
                     NewPaymentId = newPayment.paymentId,
                     NewStartDate = newStartDate,
@@ -284,6 +285,15 @@ namespace GymCrudApp.Services
             if (daysLeft < 0) return "Expired";
             if (daysLeft <= 7) return "Expiring";
             return "Active";
+        }
+        
+        public async Task<int?> GetStaffIdByUserIdAsync(int userId)
+        {
+            return await _context.Staff
+                .AsNoTracking()
+                .Where(s => s.userId == userId)
+                .Select(s => (int?)s.StaffID)
+                .FirstOrDefaultAsync();
         }
     }
 }

@@ -48,6 +48,9 @@ builder.Services.AddScoped<IMemberPortalService, MemberPortalService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<ILandingPageService, LandingPageService>();
 
+builder.Services.AddScoped<IRenewalService, RenewalService>();
+builder.Services.AddHostedService<MembershipExpiryBackgroundService>();
+
 
 builder.Services.AddControllersWithViews();
 

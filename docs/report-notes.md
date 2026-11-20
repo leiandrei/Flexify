@@ -35,3 +35,38 @@ The repository follows a structured Git workflow using `main` for tagged release
 |/  
 * 47f7b82 add(chore): Initialize project repository
 ```
+
+## System Architecture: Model-View-Controller (MVC) Design (First Draft)
+
+### 1. Architectural Overview & Separation of Concerns
+The Gym Management System is implemented in ASP.NET Core MVC using a layered, interface-driven architecture that separates HTTP request orchestration, business rules, data persistence, and presentation:
+
+- **`Models/`**: Domain entities mapped to SQL Server tables via Entity Framework Core (`Users`, `Staff`, `Members`, `MembershipPlans`, `Memberships`, `Payments`, `Attendance`).
+- **`ViewModels/`**: Purpose-built data transfer objects scoped per module (`Account`, `Members`, `MembershipPlans`, `Memberships`, `Payments`, `Attendance`, `MemberPortal`, `AdminDashboard`) to prevent over-posting and decouple database schemas from UI contracts.
+- **`Data/`**: `GymDbContext` (EF Core `DbContext` configuring primary/foreign keys and decimal precision) and `DbInitializer` (idempotent startup seeder for roles, accounts, plans, and demo records).
+- **`Services/`**: Interface-backed business logic layer (`IMemberService`, `IStaffService`, `IMembershipService`, `IPaymentService`, `IAttendanceService`, `IMemberPortalService`, `IAdminDashboardService`) registered via Dependency Injection in `Program.cs`.
+- **`Controllers/`**: Thin HTTP controllers enforcing `[Authorize]` role policies, `[ValidateAntiForgeryToken]`, and `ModelState` validation while delegating all data access and domain calculations to injected services.
+- **`Views/`**: Strongly typed Razor (`.cshtml`) templates bound to ViewModels, sharing a role-aware navigation shell in `Views/Shared/_Layout.cshtml`.
+
+### 2. Model & Data Access Layer
+Domain entities in `Models/` use Data Annotations (`[Key]`, `[Required]`, `[DataType]`) and `IValidatableObject` (such as verifying `checkOut > checkIn` in `Models/Attendance.cs`) to enforce structural integrity. `GymDbContext` translates LINQ queries into parameterized SQL statements, while read-only queries use `.AsNoTracking()` to reduce change-tracker overhead.
+
+### 3. Service & ViewModel Layer
+All domain rules reside inside `Services/` rather than controllers or views:
+- **Membership Lifecycle (`MembershipService`)**: Computes `EndDate = StartDate.AddDays(DurationDays)` and derives real-time statuses (`Active`, `Expiring` within 7 days, `Expired`, `Inactive`).
+- **Atomic Transactions (`PaymentService`)**: Wraps `Memberships` creation and `Payments` recording inside an EF Core database transaction (`BeginTransactionAsync`) and supports non-destructive receipt voiding (`isVoided = true`).
+- **Attendance Guardrails (`AttendanceService`)**: Blocks check-ins for expired/inactive memberships and enforces a single open check-in (`checkOut == null`) per member per calendar day.
+- **Claims-Scoped Isolation (`MemberPortalService`)**: Resolves member records exclusively from authenticated user claims (`ClaimTypes.NameIdentifier` / `ClaimTypes.Email`) and rejects cross-member ID requests (`GetPortalForMemberIdAsync`) to prevent Insecure Direct Object Reference (IDOR) vulnerabilities.
+- **KPI Aggregations (`AdminDashboardService`)**: Computes active member counts, 7-day expirations, non-voided monthly revenue, daily check-ins, and new member sign-ups.
+
+### 4. Controller & Security Pipeline
+Controllers in `Controllers/` remain thin and declarative:
+- **Authentication & RBAC**: Cookie authentication populates `HttpContext.User` claims on sign-in. Class- and action-level `[Authorize(Roles = "...")]` attributes enforce the role matrix (`Admin`, `Staff`, `Member`), while `[AllowAnonymous]` exposes public authentication endpoints.
+- **CSRF Protection**: All state-mutating `POST` actions enforce `[ValidateAntiForgeryToken]`.
+
+### 5. End-to-End MVC Request Flow (Example: Member Portal)
+1. **Request**: An authenticated user with the `Member` role requests `GET /MemberPortal`.
+2. **Middleware & Authorization**: ASP.NET Core Cookie Authentication validates the session cookie and `[Authorize(Roles = "Member")]` verifies role membership.
+3. **Controller (`Controllers/MemberPortalController.cs`)**: Extracts `ClaimTypes.NameIdentifier` and `ClaimTypes.Email` from `HttpContext.User` and invokes `_memberPortalService.GetPortalForUserAsync(...)`.
+4. **Service & Database (`Services/MemberPortalService.cs`, `GymDbContext`)**: Queries `Members`, `Memberships`, `Payments`, and `Attendance` filtered strictly by the resolved `memberId`, computes `DaysRemaining` and `MembershipStatus`, and populates `MemberPortalViewModel`.
+5. **View (`Views/MemberPortal/Index.cshtml`)**: Renders the membership status card, payment history, and attendance log using the strongly typed `MemberPortalViewModel`.

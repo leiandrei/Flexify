@@ -64,8 +64,8 @@ Every module follows the same pattern: a feature branch, an entity, an interface
 **Fri Nov 27: sprint 1 review**
 
 - ✅ Run every sprint 1 test case and record actual results; log bugs and fix them on `fix/*` branches
-- [ ] Merge `develop` into `main` and tag `v0.1.0`
-- [ ] Report: MVC trace for the Members module, and Git evidence (branch list, network graph, pull requests)
+- ✅ Merge `develop` into `main` and tag `v0.1.0`
+- ✅ Report: MVC trace for the Members module, and Git evidence (branch list, network graph, pull requests)
 
 ## Phase 2: Portal, dashboard and tests, sprint 2 (Nov 28 to Dec 4)
 
@@ -73,29 +73,29 @@ SDLC stage: implementation and testing, sprint 2. Goal: members see their own st
 
 **Sat Nov 28: member portal**
 
-- [ ] Home card with status, days remaining and expiry date; payment history and attendance history for the signed-in member only
-- [ ] Cross-member access test (member A opens member B's URL and fails)
+- ✅ Home card with status, days remaining and expiry date; payment history and attendance history for the signed-in member only
+- ✅ Cross-member access test (member A opens member B's URL and fails)
 
 **Sun Nov 29: admin dashboard**
 
-- [ ] Number cards: active members, expiring in 7 days, revenue this month, check-ins today, new members
-- [ ] Chart.js charts for check-ins and revenue, only if time allows
+- ✅ Number cards: active members, expiring in 7 days, revenue this month, check-ins today, new members
+- ✅ Chart.js charts for check-ins and revenue, only if time allows
 
 **Mon Nov 30: tier 1 complete**
 
-- [ ] Bug bash on tier 1 as each role; fix on `fix/*` branches
-- [ ] Report: first draft of the MVC section from your notes
+- ✅ Bug bash on tier 1 as each role; fix on `fix/*` branches
+- ✅ Report: first draft of the MVC section from your notes
 
 **Tue Dec 1: public landing page**
 
-- [ ] Landing page: hero, plans and prices read from MembershipPlans, facility info, contact details, links to Register and Login (no new table needed)
-- [ ] Check it at phone width
+- ✅ Landing page: hero, plans and prices read from MembershipPlans, facility info, contact details, links to Register and Login (no new table needed)
+- ✅ Check it at phone width
 
 **Wed Dec 2: expiry and renewal**
 
-- [ ] Status shown everywhere as Active, Expiring or Expired; an expiring-soon list for staff
-- [ ] One-click renew using the renewal rule, which also creates the payment; xUnit tests for the renewal date
-- [ ] Optional: a daily background service that flags expired memberships
+- ✅ Status shown everywhere as Active, Expiring or Expired; an expiring-soon list for staff
+- ✅ One-click renew using the renewal rule, which also creates the payment; xUnit tests for the renewal date
+- ✅ Optional: a daily background service that flags expired memberships
 
 **Thu Dec 3: SOLID refactor and tests**
 

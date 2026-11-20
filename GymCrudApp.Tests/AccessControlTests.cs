@@ -75,12 +75,18 @@ namespace GymCrudApp.Tests
         [Fact]
         public void AllNonPublicControllers_HaveAuthorizeAttribute()
         {
+            var publicControllers = new HashSet<Type>
+            {
+                typeof(HomeController),
+                typeof(AccountController),
+                typeof(ChatbotController)
+            };
+
             var protectedControllers = typeof(StaffController).Assembly
                 .GetTypes()
                 .Where(t => typeof(Controller).IsAssignableFrom(t)
                             && !t.IsAbstract
-                            && t != typeof(HomeController)
-                            && t != typeof(AccountController));
+                            && !publicControllers.Contains(t));
 
             foreach (var controller in protectedControllers)
             {

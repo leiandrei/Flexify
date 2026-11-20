@@ -52,6 +52,10 @@ builder.Services.AddScoped<ILandingPageService, LandingPageService>();
 builder.Services.AddScoped<IRenewalService, RenewalService>();
 builder.Services.AddHostedService<MembershipExpiryBackgroundService>();
 
+// chatbot services
+builder.Services.AddHttpClient<ILlmChatService, LlmChatService>();
+builder.Services.AddScoped<IChatbotService, ChatbotService>();
+
 
 builder.Services.AddControllersWithViews();
 

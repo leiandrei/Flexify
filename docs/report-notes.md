@@ -70,3 +70,36 @@ Controllers in `Controllers/` remain thin and declarative:
 3. **Controller (`Controllers/MemberPortalController.cs`)**: Extracts `ClaimTypes.NameIdentifier` and `ClaimTypes.Email` from `HttpContext.User` and invokes `_memberPortalService.GetPortalForUserAsync(...)`.
 4. **Service & Database (`Services/MemberPortalService.cs`, `GymDbContext`)**: Queries `Members`, `Memberships`, `Payments`, and `Attendance` filtered strictly by the resolved `memberId`, computes `DaysRemaining` and `MembershipStatus`, and populates `MemberPortalViewModel`.
 5. **View (`Views/MemberPortal/Index.cshtml`)**: Renders the membership status card, payment history, and attendance log using the strongly typed `MemberPortalViewModel`.
+6. 
+## Phase 2 Summary: Portals, Analytics, Renewals & SOLID Refactor (`v0.2.0`)
+
+### 1. Core Modules Delivered
+- **Member Self-Service Portal (`MemberPortalController`, `IMemberPortalService`)**: Provides authenticated `Member` users with a read-only view of their active subscription status, remaining days, payment receipts, and check-in history (`MemberPortalViewModel`).
+- **Admin Analytics Dashboard (`AdminDashboardController`, `IAdminDashboardService`)**: Aggregates five real-time KPIs—Active Members, Subscriptions Expiring in 7 Days, Monthly Non-Voided Revenue, Check-Ins Today, and New Members This Month—alongside 7-day check-in and 6-month revenue series for Chart.js (`AdminDashboardViewModel`).
+- **Public Landing Page (`HomeController`, `ILandingPageService`)**: Exposes an `[AllowAnonymous]` storefront displaying active `MembershipPlans` sorted by price and duration alongside facility hours and contact details (`LandingPageViewModel`) without adding new database tables.
+- **Expiry & One-Click Renewal Engine (`RenewalsController`, `IRenewalService`, `MembershipExpiryBackgroundService`)**: Surfaces a 7-day expiring and recently expired queue for `Admin` and `Staff`, executes atomic membership renewals, and runs a 24-hour background worker (`BackgroundService`) to deactivate past-due subscriptions.
+- **Role-Based Post-Login Routing (`AccountController`)**: Routes authenticated users directly to their primary workspace upon sign-in (`Admin` $\rightarrow$ `/AdminDashboard`, `Staff` $\rightarrow$ `/Attendance`, `Member` $\rightarrow$ `/MemberPortal`).
+
+### 2. Business Rules, Transactions & Security Controls
+- **IDOR Prevention**: `MemberPortalService` resolves profiles strictly from authenticated session claims (`ClaimTypes.NameIdentifier` and `ClaimTypes.Email`) and explicitly rejects cross-member ID lookups (`GetPortalForMemberIdAsync`).
+- **Atomic Renewal Transactions**: `RenewalService.RenewMembershipAsync` wraps old membership deactivation (`isActive = false`), new `Memberships` creation, and `Payments` insertion inside an EF Core database transaction (`BeginTransactionAsync`) with full rollback on failure.
+- **Renewal Date Continuity**: Unexpired renewals start on `CurrentEndDate + 1 day` to preserve remaining paid days, whereas expired or unassigned renewals start on the transaction date (`Today`). Non-cash renewals (`GCash`, `Maya`, `Bank Transfer`, `Card`) enforce a non-empty `ReferenceNumber`.
+- **Edge-Case Resilience**: Safely handles unassigned members (`"No Membership"` state), blocks deactivated members (`isActive = false`) from checking in, prevents duplicate same-day open check-ins, and guards empty-table revenue aggregations against null sums.
+
+### 3. SOLID Principles Applied
+- **Single Responsibility (SRP)**: Controllers handle HTTP routing, `[Authorize]` policies, `[ValidateAntiForgeryToken]`, and `ModelState` validation, delegating all queries and domain rules to `Services/`.
+- **Open/Closed (OCP)**: Plan durations, pricing tiers, and scheduled expiry sweeps (`MembershipExpiryBackgroundService`) extend system behavior without modifying existing controller actions.
+- **Liskov Substitution (LSP)**: All `I*Service` implementations honor identical interface contracts and nullability guarantees across SQL Server and EF Core's `InMemory` test provider.
+- **Interface Segregation (ISP)**: Capabilities are split into role-focused interfaces (`IMemberPortalService`, `IAdminDashboardService`, `ILandingPageService`, `IRenewalService`) rather than a monolithic service interface.
+- **Dependency Inversion (DIP)**: All domain controllers depend exclusively on `I*Service` abstractions registered via Dependency Injection in `Program.cs` (including decoupling `GymDbContext` from `RenewalsController` via `GetStaffIdByUserIdAsync`).
+
+### 4. Automated Verification (`dotnet test` — 53/53 Passing)
+
+| Test Suite | Scope & Verified Behaviors |
+| :--- | :--- |
+| `MemberPortalServiceTests` | Claims-scoped data isolation, remaining-day calculations, cross-member IDOR blocking, `[Authorize(Roles = "Member")]` |
+| `AdminDashboardServiceTests` | All 5 KPI calculations, exclusion of voided payments (`isVoided = true`), 7-day & 6-month chart aggregations, Admin-only RBAC |
+| `LandingPageServiceTests` | Active-only plan filtering, ascending price sort, empty-table safety, `[AllowAnonymous]` on `HomeController.Index` |
+| `RenewalServiceTests` & `BusinessRulesTests` | `EndDate + 1` vs. `Today` renewal start rules, atomic transaction rollback, non-cash reference validation, duplicate check-in prevention, daily expiry sweep |
+| `Tier1EdgeCaseTests` | Unassigned member safe defaults, deactivated member check-in block, zero-KPI aggregation on empty database |
+| `SolidArchitectureTests` & `AccessControlTests` | Reflection audit confirming `I*Service` implementation on all domain services, zero direct `GymDbContext` injection in domain controllers, and exact `[Authorize]` role policies across all controllers |

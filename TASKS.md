@@ -99,13 +99,13 @@ SDLC stage: implementation and testing, sprint 2. Goal: members see their own st
 
 **Thu Dec 3: SOLID refactor and tests**
 
-- [ ] Extract an interface for each service, check that controllers are thin, and confirm everything is registered in `Program.cs`
-- [ ] xUnit tests for payment and attendance rules; write any missing manual test cases
+- ✅ Extract an interface for each service, check that controllers are thin, and confirm everything is registered in `Program.cs`
+- ✅ xUnit tests for payment and attendance rules; write any missing manual test cases
 
 **Fri Dec 4: sprint 2 review**
 
-- [ ] Run all sprint 2 test cases; merge `develop` into `main`; tag `v0.2.0`
-- [ ] Report: SOLID write-up with a code snippet for each principle
+- ✅ Run all sprint 2 test cases; merge `develop` into `main`; tag `v0.2.0`
+- ✅ Report: SOLID write-up with a code snippet for each principle
 
 ## Phase 3: Extras and report draft (Dec 5 to 9)
 

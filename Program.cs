@@ -39,11 +39,16 @@ builder.Services.AddScoped<DbInitializer>();
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
+
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+
 builder.Services.AddScoped<IMemberPortalService, MemberPortalService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<ILandingPageService, LandingPageService>();
+
+
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddAuthorization(options =>

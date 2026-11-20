@@ -83,8 +83,8 @@ SDLC stage: implementation and testing, sprint 2. Goal: members see their own st
 
 **Mon Nov 30: tier 1 complete**
 
-- [ ] Bug bash on tier 1 as each role; fix on `fix/*` branches
-- [ ] Report: first draft of the MVC section from your notes
+- ✅ Bug bash on tier 1 as each role; fix on `fix/*` branches
+- ✅ Report: first draft of the MVC section from your notes
 
 **Tue Dec 1: public landing page**
 

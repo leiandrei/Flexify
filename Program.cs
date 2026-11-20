@@ -42,7 +42,7 @@ builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
-
+builder.Services.AddScoped<IMemberPortalService, MemberPortalService>();
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddAuthorization(options =>

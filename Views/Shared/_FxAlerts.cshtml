@@ -1,0 +1,13 @@
+@* Shows the TempData messages that the controllers set. *@
+@if (TempData["SuccessMessage"] is string ok)
+{
+    <div class="fx-alert fx-alert--success" role="status">@ok</div>
+}
+@if (TempData["WarningMessage"] is string warn)
+{
+    <div class="fx-alert fx-alert--warn" role="status">@warn</div>
+}
+@if (TempData["ErrorMessage"] is string err)
+{
+    <div class="fx-alert fx-alert--danger" role="alert">@err</div>
+}

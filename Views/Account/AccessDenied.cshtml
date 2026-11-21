@@ -2,8 +2,13 @@
     ViewData["Title"] = "Access Denied";
 }
 
-<div class="alert alert-danger mt-4">
-    <h2>Access Denied</h2>
-    <p>You do not have permission to view this page.</p>
-    <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Return Home</a>
+<div class="fx-container">
+    <div class="fx-auth">
+        <div class="fx-card">
+            <span class="fx-badge fx-badge--overdue" style="align-self:flex-start">No access</span>
+            <h1>Access denied</h1>
+            <p class="fx-muted">You do not have permission to view this page.</p>
+            <a asp-controller="Home" asp-action="Index" class="fx-btn fx-btn--outline fx-btn--block">Return home</a>
+        </div>
+    </div>
 </div>

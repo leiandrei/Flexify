@@ -3,51 +3,57 @@
     ViewData["Title"] = "Register";
 }
 
-<div class="row justify-content-center mt-4">
-    <div class="col-md-5">
-        <h2>Member Registration</h2>
-        <form asp-action="Register" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-            <div class="mb-3">
-                <label asp-for="FullName" class="form-label"></label>
-                <input asp-for="FullName" class="form-control" />
-                <span asp-validation-for="FullName" class="text-danger"></span>
+<div class="fx-container">
+    <div class="fx-auth fx-auth--wide">
+        <div class="fx-card">
+            <div class="fx-stack fx-stack--sm">
+                <h1>Become a member</h1>
+                <p class="fx-muted">Create your account to see your membership, payments and visits.</p>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" placeholder="name@gmail.com" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
+            <form asp-action="Register" method="post" class="fx-form">
+                <div asp-validation-summary="ModelOnly"></div>
 
-            <div class="mb-3">
-                <label asp-for="ContactNumber" class="form-label"></label>
-                <input asp-for="ContactNumber" class="form-control" placeholder="09171234567" />
-                <span asp-validation-for="ContactNumber" class="text-danger"></span>
-            </div>
+                <div class="fx-field">
+                    <label asp-for="FullName" class="fx-label"></label>
+                    <input asp-for="FullName" class="fx-input" autocomplete="name" />
+                    <span asp-validation-for="FullName" class="fx-error"></span>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="Birthdate" class="form-label"></label>
-                <input asp-for="Birthdate" class="form-control" />
-                <span asp-validation-for="Birthdate" class="text-danger"></span>
-            </div>
+                <div class="fx-field">
+                    <label asp-for="Email" class="fx-label"></label>
+                    <input asp-for="Email" class="fx-input" placeholder="name@gmail.com" autocomplete="email" />
+                    <span asp-validation-for="Email" class="fx-error"></span>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" class="form-control" />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
+                <div class="fx-field">
+                    <label asp-for="ContactNumber" class="fx-label"></label>
+                    <input asp-for="ContactNumber" class="fx-input" placeholder="09171234567" autocomplete="tel" />
+                    <span asp-validation-for="ContactNumber" class="fx-error"></span>
+                </div>
 
-            <div class="mb-3">
-                <label asp-for="ConfirmPassword" class="form-label"></label>
-                <input asp-for="ConfirmPassword" class="form-control" />
-                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-            </div>
+                <div class="fx-field">
+                    <label asp-for="Birthdate" class="fx-label"></label>
+                    <input asp-for="Birthdate" class="fx-input" />
+                    <span asp-validation-for="Birthdate" class="fx-error"></span>
+                </div>
 
-            <button type="submit" class="btn btn-primary w-100">Register</button>
-        </form>
-        <p class="mt-3">Already have an account? <a asp-action="Login">Log in</a></p>
+                <div class="fx-field">
+                    <label asp-for="Password" class="fx-label"></label>
+                    <input asp-for="Password" class="fx-input" autocomplete="new-password" />
+                    <span asp-validation-for="Password" class="fx-error"></span>
+                </div>
+
+                <div class="fx-field">
+                    <label asp-for="ConfirmPassword" class="fx-label"></label>
+                    <input asp-for="ConfirmPassword" class="fx-input" autocomplete="new-password" />
+                    <span asp-validation-for="ConfirmPassword" class="fx-error"></span>
+                </div>
+
+                <button type="submit" class="fx-btn fx-btn--primary fx-btn--lg fx-btn--block">Create account</button>
+            </form>
+        </div>
+        <p class="fx-auth__foot" style="margin-top:20px">Already have an account? <a asp-action="Login">Log in</a></p>
     </div>
 </div>
 

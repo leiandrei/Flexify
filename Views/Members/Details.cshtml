@@ -1,28 +1,57 @@
 @model GymCrudApp.ViewModels.Members.MemberDetailsViewModel
 @{
+    Layout = "_AdminLayout";
     ViewData["Title"] = "Member Details";
 }
 
-<h2>Member Details</h2>
-<dl class="row mt-3">
-    <dt class="col-sm-3">Full Name</dt>
-    <dd class="col-sm-9">@Model.FullName</dd>
+<header class="fx-page-head">
+    <div class="fx-page-head__title">
+        <span class="fx-avatar fx-avatar--lg @(Model.IsActive ? "" : "fx-avatar--neutral")" aria-hidden="true">@FlexifyUi.Initials(Model.FullName)</span>
+        <div class="fx-stack fx-stack--sm" style="gap:4px;min-width:0">
+            <h1>@Model.FullName</h1>
+            <p class="fx-muted">@Model.Email</p>
+        </div>
+    </div>
+    <div class="fx-row">
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Back to list</a>
+        <a asp-action="Edit" asp-route-id="@Model.MemberId" class="fx-btn fx-btn--primary">Edit member</a>
+    </div>
+</header>
 
-    <dt class="col-sm-3">Email</dt>
-    <dd class="col-sm-9">@Model.Email</dd>
+<div class="fx-split">
+    <section class="fx-card fx-split__main" aria-labelledby="profile-heading">
+        <div class="fx-card__head">
+            <h2 id="profile-heading">Profile</h2>
+            @if (Model.IsActive)
+            {
+                <span class="fx-badge fx-badge--active">Active</span>
+            }
+            else
+            {
+                <span class="fx-badge fx-badge--neutral">Inactive</span>
+            }
+        </div>
+        <dl class="fx-kv-list">
+            <div class="fx-kv"><dt>Full name</dt><dd>@Model.FullName</dd></div>
+            <div class="fx-kv"><dt>Email</dt><dd>@Model.Email</dd></div>
+            <div class="fx-kv"><dt>Contact number</dt><dd>@Model.ContactNumber</dd></div>
+            <div class="fx-kv"><dt>Birthdate</dt><dd>@Model.Birthdate.ToString("MMM d, yyyy")</dd></div>
+            <div class="fx-kv"><dt>Join date</dt><dd>@Model.JoinDate.ToString("MMM d, yyyy")</dd></div>
+        </dl>
+    </section>
 
-    <dt class="col-sm-3">Contact Number</dt>
-    <dd class="col-sm-9">@Model.ContactNumber</dd>
-
-    <dt class="col-sm-3">Birthdate</dt>
-    <dd class="col-sm-9">@Model.Birthdate.ToString("yyyy-MM-dd")</dd>
-
-    <dt class="col-sm-3">Join Date</dt>
-    <dd class="col-sm-9">@Model.JoinDate.ToString("yyyy-MM-dd")</dd>
-
-    <dt class="col-sm-3">Status</dt>
-    <dd class="col-sm-9">@(Model.IsActive ? "Active" : "Inactive")</dd>
-</dl>
-
-<a asp-action="Edit" asp-route-id="@Model.MemberId" class="btn btn-warning">Edit</a>
-<a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    <section class="fx-card fx-split__side" aria-labelledby="membership-heading">
+        <div class="fx-card__head">
+            <h2 id="membership-heading">Membership</h2>
+            <span class="@FlexifyUi.StatusBadge(Model.MembershipStatus)">@Model.MembershipStatus</span>
+        </div>
+        <dl class="fx-kv-list">
+            <div class="fx-kv"><dt>Plan</dt><dd>@(Model.CurrentPlanName ?? "None")</dd></div>
+            <div class="fx-kv"><dt>Valid until</dt><dd>@(Model.MembershipEndDate?.ToString("MMM d, yyyy") ?? "—")</dd></div>
+            @if (Model.DaysRemaining.HasValue)
+            {
+                <div class="fx-kv"><dt>Days remaining</dt><dd>@Model.DaysRemaining</dd></div>
+            }
+        </dl>
+    </section>
+</div>

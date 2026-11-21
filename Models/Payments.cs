@@ -76,5 +76,11 @@ namespace GymCrudApp.Models
                     new[] { nameof(referenceNumber) });
             }
         }
+        
+        [StringLength(260)]
+        public string? ReceiptImagePath { get; set; }
+        public string? OcrRawText { get; set; }
+        
+        
     }
 }

@@ -56,6 +56,10 @@ builder.Services.AddHostedService<MembershipExpiryBackgroundService>();
 builder.Services.AddHttpClient<ILlmChatService, LlmChatService>();
 builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
+// receipt ocr services
+builder.Services.AddHttpClient<IOcrService, OcrService>();
+builder.Services.AddScoped<IReceiptOcrService, ReceiptOcrService>();
+
 
 builder.Services.AddControllersWithViews();
 

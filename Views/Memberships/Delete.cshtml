@@ -1,0 +1,28 @@
+﻿@model GymCrudApp.ViewModels.Memberships.MembershipDetailsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Delete Membership";
+}
+ 
+<header class="fx-page-head">
+    <h1>Delete membership</h1>
+</header>
+ 
+<div class="fx-card fx-narrow">
+    <dl class="fx-kv-list">
+        <div class="fx-kv"><dt>Member</dt><dd>@Model.MemberName</dd></div>
+        <div class="fx-kv"><dt>Plan</dt><dd>@Model.PlanName</dd></div>
+        <div class="fx-kv"><dt>Dates</dt><dd>@Model.StartDate.ToString("MMM d, yyyy") to @Model.EndDate.ToString("MMM d, yyyy")</dd></div>
+        <div class="fx-kv"><dt>Status</dt><dd><span class="@FlexifyUi.StatusBadge(Model.ComputedStatus)">@Model.ComputedStatus</span></dd></div>
+    </dl>
+ 
+    <div class="fx-alert fx-alert--warn">
+        Are you sure you want to delete <strong>@Model.MemberName</strong>'s @Model.PlanName membership? This can't be undone.
+    </div>
+ 
+    <form asp-action="Delete" asp-route-id="@Model.MembershipId" method="post" class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--danger">Confirm delete</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </form>
+</div>
+ 

@@ -1,0 +1,54 @@
+﻿@model GymCrudApp.ViewModels.Payments.PaymentEditViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Edit Payment";
+    var paymentTypes = new[] { "Cash", "GCash", "Maya", "Bank Transfer", "Card" };
+}
+ 
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Edit payment</h1>
+        <p class="fx-muted">@Model.MemberName · @Model.PlanName</p>
+    </div>
+</header>
+ 
+<form asp-action="Edit" method="post" class="fx-card fx-form fx-narrow">
+    <input type="hidden" asp-for="PaymentId" />
+    <input type="hidden" asp-for="MemberName" />
+    <input type="hidden" asp-for="PlanName" />
+    <div asp-validation-summary="ModelOnly"></div>
+ 
+    <div class="fx-field">
+        <label asp-for="Amount" class="fx-label"></label>
+        <input asp-for="Amount" class="fx-input" step="0.01" min="0.01" />
+        <span asp-validation-for="Amount" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="PaymentType" class="fx-label"></label>
+        <select asp-for="PaymentType" asp-items="@(new SelectList(paymentTypes))" class="fx-select"></select>
+        <span asp-validation-for="PaymentType" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="ReferenceNumber" class="fx-label"></label>
+        <input asp-for="ReferenceNumber" class="fx-input" />
+        <span asp-validation-for="ReferenceNumber" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="PaymentDate" class="fx-label"></label>
+        <input asp-for="PaymentDate" class="fx-input" />
+        <span asp-validation-for="PaymentDate" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--primary">Update payment</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </div>
+</form>
+ 
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+ 

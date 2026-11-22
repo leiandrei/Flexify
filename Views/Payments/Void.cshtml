@@ -1,0 +1,29 @@
+﻿@model GymCrudApp.ViewModels.Payments.PaymentDetailsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Void Payment";
+}
+ 
+<header class="fx-page-head">
+    <h1>Void payment</h1>
+</header>
+ 
+<div class="fx-card fx-narrow">
+    <dl class="fx-kv-list">
+        <div class="fx-kv"><dt>Member</dt><dd>@Model.MemberName</dd></div>
+        <div class="fx-kv"><dt>Plan</dt><dd>@Model.PlanName</dd></div>
+        <div class="fx-kv"><dt>Amount</dt><dd>@FlexifyUi.Peso(Model.Amount)</dd></div>
+        <div class="fx-kv"><dt>Method</dt><dd>@Model.PaymentType @(Model.ReferenceNumber != null ? "(" + Model.ReferenceNumber + ")" : "")</dd></div>
+        <div class="fx-kv"><dt>Date</dt><dd>@Model.PaymentDate.ToString("MMM d, yyyy")</dd></div>
+    </dl>
+ 
+    <div class="fx-alert fx-alert--warn">
+        Voiding marks this payment as cancelled. It stays in the history but no longer counts toward revenue. Are you sure?
+    </div>
+ 
+    <form asp-action="Void" asp-route-id="@Model.PaymentId" method="post" class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--danger">Confirm void</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </form>
+</div>
+ 

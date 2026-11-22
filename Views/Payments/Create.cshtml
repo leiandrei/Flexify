@@ -1,0 +1,81 @@
+﻿@model GymCrudApp.ViewModels.Payments.PaymentCreateViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Record Payment";
+    var paymentTypes = new[] { "Cash", "GCash", "Maya", "Bank Transfer", "Card" };
+}
+ 
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Sell a plan &amp; record payment</h1>
+        <p class="fx-muted">This creates the member's new membership and saves the payment together.</p>
+    </div>
+</header>
+ 
+<form asp-action="Create" method="post" class="fx-card fx-form fx-narrow">
+    <div asp-validation-summary="ModelOnly"></div>
+ 
+    <div class="fx-field">
+        <label asp-for="MemberId" class="fx-label"></label>
+        <select asp-for="MemberId" asp-items="Model.Members" class="fx-select">
+            <option value="">Choose a member</option>
+        </select>
+        <span asp-validation-for="MemberId" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="PlanId" class="fx-label"></label>
+        <select asp-for="PlanId" asp-items="Model.Plans" class="fx-select">
+            <option value="">Choose a plan</option>
+        </select>
+        <span asp-validation-for="PlanId" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="StartDate" class="fx-label"></label>
+        <input asp-for="StartDate" class="fx-input" />
+        <span asp-validation-for="StartDate" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="Amount" class="fx-label"></label>
+        <input asp-for="Amount" class="fx-input" step="0.01" min="0.01" />
+        <span asp-validation-for="Amount" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="PaymentType" class="fx-label"></label>
+        <select asp-for="PaymentType" asp-items="@(new SelectList(paymentTypes))" class="fx-select"></select>
+        <span asp-validation-for="PaymentType" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="ReferenceNumber" class="fx-label"></label>
+        <input asp-for="ReferenceNumber" class="fx-input" placeholder="e.g. GCASH-20261122-001" />
+        <span asp-validation-for="ReferenceNumber" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="PaymentDate" class="fx-label"></label>
+        <input asp-for="PaymentDate" class="fx-input" />
+        <span asp-validation-for="PaymentDate" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="RecordedByStaffId" class="fx-label"></label>
+        <select asp-for="RecordedByStaffId" asp-items="Model.StaffList" class="fx-select">
+            <option value="">Choose staff</option>
+        </select>
+        <span asp-validation-for="RecordedByStaffId" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--primary">Save payment</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </div>
+</form>
+ 
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+ 

@@ -77,9 +77,6 @@ namespace GymCrudApp.Models
             }
         }
         
-        [StringLength(260)]
-        public string? ReceiptImagePath { get; set; }
-        public string? OcrRawText { get; set; }
         
         
     }

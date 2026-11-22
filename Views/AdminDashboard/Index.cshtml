@@ -1,0 +1,82 @@
+﻿@model GymCrudApp.ViewModels.AdminDashboard.AdminDashboardViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Dashboard";
+    var maxCheckIns = Model.DailyCheckInCounts.Any() ? Math.Max(1, Model.DailyCheckInCounts.Max()) : 1;
+}
+ 
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Dashboard</h1>
+        <p class="fx-muted">As of @Model.AsOfDate.ToString("dddd, MMM d, yyyy")</p>
+    </div>
+</header>
+ 
+@* 1. Number cards *@
+<section class="fx-grid-stats" aria-label="Key numbers">
+    <a asp-controller="Members" asp-action="Index" class="fx-stat">
+        <span class="fx-stat__label">Active members</span>
+        <span class="fx-stat__value">@Model.ActiveMembersCount</span>
+        <span class="fx-stat__hint">View members</span>
+    </a>
+    <div class="fx-stat @(Model.ExpiringIn7DaysCount > 0 ? "fx-stat--warn" : "")">
+        <span class="fx-stat__label">Expiring in 7 days</span>
+        <span class="fx-stat__value">@Model.ExpiringIn7DaysCount</span>
+        <span class="fx-stat__hint">Remind them to renew</span>
+    </div>
+    <a asp-controller="Payments" asp-action="Index" class="fx-stat">
+        <span class="fx-stat__label">Revenue this month</span>
+        <span class="fx-stat__value">@FlexifyUi.Peso(Model.RevenueThisMonth)</span>
+        <span class="fx-stat__hint">View payments</span>
+    </a>
+    <a asp-controller="Attendance" asp-action="Index" class="fx-stat">
+        <span class="fx-stat__label">Check-ins today</span>
+        <span class="fx-stat__value">@Model.CheckInsTodayCount</span>
+        <span class="fx-stat__hint">View attendance</span>
+    </a>
+    <div class="fx-stat">
+        <span class="fx-stat__label">New members this month</span>
+        <span class="fx-stat__value">@Model.NewMembersThisMonthCount</span>
+        <span class="fx-stat__hint fx-stat__hint--up">This month</span>
+    </div>
+</section>
+ 
+@* 2. Check-ins for the last 7 days *@
+<section class="fx-card" aria-labelledby="checkins-heading">
+    <div class="fx-card__head">
+        <h2 id="checkins-heading">Check-ins, last 7 days</h2>
+    </div>
+    @if (Model.DailyCheckInCounts.Any())
+    {
+        <div class="fx-bars">
+            @for (int i = 0; i < Model.DailyCheckInCounts.Count; i++)
+            {
+                var count = Model.DailyCheckInCounts[i];
+                var isToday = i == Model.DailyCheckInCounts.Count - 1;
+                <div class="fx-bar @(isToday ? "fx-bar--today" : "")">
+                    <span class="fx-bar__value">@count</span>
+                    <div class="fx-bar__fill" style="height:@(count * 100 / maxCheckIns)%"></div>
+                    <span class="fx-bar__label">@(i < Model.DailyCheckInLabels.Count ? Model.DailyCheckInLabels[i] : "")</span>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="fx-muted">No check-in data yet.</p>
+    }
+</section>
+ 
+@* 3. Quick links *@
+<section class="fx-card" aria-labelledby="links-heading">
+    <div class="fx-card__head">
+        <h2 id="links-heading">Quick links</h2>
+    </div>
+    <div class="fx-row">
+        <a asp-controller="Members" asp-action="Create" class="fx-btn fx-btn--primary">+ Register member</a>
+        <a asp-controller="MembershipPlans" asp-action="Index" class="fx-btn fx-btn--outline">Membership plans</a>
+        <a asp-controller="Staff" asp-action="Index" class="fx-btn fx-btn--outline">Staff</a>
+        <a asp-controller="Home" asp-action="Index" class="fx-btn fx-btn--ghost">&larr; Public home page</a>
+    </div>
+</section>
+ 

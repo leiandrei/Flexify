@@ -1,2 +1,45 @@
 services:
-  
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: flexify-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD:-FlexifyStrongPass!2026}"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - flexify_sql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flexify-web
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=GymCrudDb;User Id=sa;Password=${DB_PASSWORD:-FlexifyStrongPass!2026};TrustServerCertificate=True;MultipleActiveResultSets=true;"
+      Llm__ApiKey: "${LLM_API_KEY:-}"
+      Llm__BaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/"
+      Llm__Model: "gemini-3.8-flash"
+      Llm__TimeoutSeconds: "15"
+    volumes:
+      - flexify_uploads:/app/wwwroot/uploads
+    restart: unless-stopped
+
+volumes:
+  flexify_sql_data:
+  flexify_uploads:

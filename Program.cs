@@ -1,24 +1,28 @@
 using GymCrudApp.Data;
 using GymCrudApp.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add services to the container
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<GymDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// 2. Configure ASP.NET Core Identity with Roles and Lockout
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
 
-        // Lockout settings for repeated failed login attempts
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
         options.Lockout.MaxFailedAccessAttempts = 5;
         options.Lockout.AllowedForNewUsers = true;
@@ -26,7 +30,6 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<GymDbContext>();
 
-// 3. Point Identity's cookie redirects to your custom AccountController
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
@@ -34,10 +37,15 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
-// register the services
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddScoped<DbInitializer>();
 
-// domain Services
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IMembershipPlanService, MembershipPlanService>();
@@ -45,23 +53,20 @@ builder.Services.AddScoped<IMembershipService, MembershipService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 
-// feature & background Services
 builder.Services.AddScoped<IMemberPortalService, MemberPortalService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<ILandingPageService, LandingPageService>();
 builder.Services.AddScoped<IRenewalService, RenewalService>();
 builder.Services.AddHostedService<MembershipExpiryBackgroundService>();
 
-// chatbot services
 builder.Services.AddHttpClient<ILlmChatService, LlmChatService>();
 builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
-// receipt ocr services
 builder.Services.AddHttpClient<IOcrService, OcrService>();
 builder.Services.AddScoped<IReceiptOcrService, ReceiptOcrService>();
 
-
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -70,27 +75,30 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-builder.Services.AddScoped<DbInitializer>();
-builder.Services.AddControllersWithViews();
-
 var app = builder.Build();
 
-// 5. Run the seed class on startup
+app.UseForwardedHeaders();
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var dbContext = services.GetRequiredService<GymDbContext>();
+    await dbContext.Database.MigrateAsync();
+
     var initializer = services.GetRequiredService<DbInitializer>();
     await initializer.SeedAsync();
 }
 
-// 6. Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+else
+{
+    app.UseHttpsRedirection();
+}
 
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();

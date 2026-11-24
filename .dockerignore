@@ -1,0 +1,12 @@
+**/.git
+**/.gitignore
+**/.vs
+**/.idea
+**/.vscode
+**/bin
+**/obj
+**/out
+GymCrudApp.Tests/
+*.md
+.env
+.env.*

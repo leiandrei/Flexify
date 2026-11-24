@@ -10,6 +10,7 @@ namespace GymCrudApp.Services
         Task<MemberEditViewModel?> GetForEditAsync(int id);
         Task<(bool Success, string? ErrorMessage)> CreateAsync(MemberCreateViewModel model);
         Task<(bool Success, string? ErrorMessage)> UpdateAsync(MemberEditViewModel model);
+        Task<(bool Success, string? ErrorMessage)> DeletePermanentlyAsync(int id);
         Task<bool> DeactivateAsync(int id);
     }
 }

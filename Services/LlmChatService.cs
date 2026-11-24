@@ -38,58 +38,93 @@ namespace GymCrudApp.Services
                 return null;
             }
 
-            var baseUrl = (_configuration["Llm:BaseUrl"] ?? "https://generativelanguage.googleapis.com/v1beta/openai/")
-                .TrimEnd('/') + "/";
-            var model = _configuration["Llm:Model"] ?? "gemini-3.5-flash-lite";
-            var timeoutSeconds = int.TryParse(_configuration["Llm:TimeoutSeconds"], out var t) ? t : 8;
+            var configuredBaseUrl = _configuration["Llm:BaseUrl"];
+            var baseUrl = (string.IsNullOrWhiteSpace(configuredBaseUrl)
+                ? "https://generativelanguage.googleapis.com/v1beta/openai/"
+                : configuredBaseUrl).TrimEnd('/') + "/";
+
+            var configuredModel = _configuration["Llm:Model"];
+            var primaryModel = string.IsNullOrWhiteSpace(configuredModel)
+                ? "gemini-3.8-flash"
+                : configuredModel.Trim();
+
+            var fallbackModel = _configuration["Llm:FallbackModel"]?.Trim();
+            var candidateModels = string.IsNullOrWhiteSpace(fallbackModel) || fallbackModel == primaryModel
+                ? new[] { primaryModel }
+                : new[] { primaryModel, fallbackModel };
+
+            var timeoutSeconds = int.TryParse(_configuration["Llm:TimeoutSeconds"], out var t) && t > 0 ? t : 15;
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
 
-            var payload = new
+            foreach (var model in candidateModels)
             {
-                model,
-                messages = new[]
+                for (var attempt = 1; attempt <= 2; attempt++)
                 {
-                    new { role = "system", content = systemPrompt },
-                    new { role = "user", content = userMessage }
-                },
-                temperature = 0.3,
-                max_tokens = 300
-            };
+                    var payload = new
+                    {
+                        model,
+                        messages = new[]
+                        {
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userMessage }
+                        },
+                        temperature = 0.3,
+                        max_tokens = 300
+                    };
 
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}chat/completions");
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-                request.Content = new StringContent(
-                    JsonSerializer.Serialize(payload),
-                    Encoding.UTF8,
-                    "application/json");
+                    try
+                    {
+                        using var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}chat/completions");
+                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                        request.Content = new StringContent(
+                            JsonSerializer.Serialize(payload),
+                            Encoding.UTF8,
+                            "application/json");
 
-                using var response = await _httpClient.SendAsync(request, timeoutCts.Token);
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("Gemini endpoint returned HTTP {StatusCode}.", response.StatusCode);
-                    return null;
+                        using var response = await _httpClient.SendAsync(request, timeoutCts.Token);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var rawJson = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+                            using var doc = JsonDocument.Parse(rawJson);
+
+                            var reply = doc.RootElement
+                                .GetProperty("choices")[0]
+                                .GetProperty("message")
+                                .GetProperty("content")
+                                .GetString();
+
+                            if (!string.IsNullOrWhiteSpace(reply))
+                            {
+                                return reply.Trim();
+                            }
+                        }
+
+                        var statusCode = (int)response.StatusCode;
+                        var errBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+                        _logger.LogWarning(
+                            "Gemini endpoint ({Model}, attempt {Attempt}) returned HTTP {StatusCode}: {ErrorBody}",
+                            model, attempt, response.StatusCode, errBody);
+
+                        // Retry only on transient 429/503 capacity errors
+                        if ((statusCode == 429 || statusCode == 503) && attempt == 1)
+                        {
+                            await Task.Delay(700, timeoutCts.Token);
+                            continue;
+                        }
+
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Gemini request ({Model}, attempt {Attempt}) failed or timed out.", model, attempt);
+                        break;
+                    }
                 }
-
-                var rawJson = await response.Content.ReadAsStringAsync(timeoutCts.Token);
-                using var doc = JsonDocument.Parse(rawJson);
-
-                var reply = doc.RootElement
-                    .GetProperty("choices")[0]
-                    .GetProperty("message")
-                    .GetProperty("content")
-                    .GetString();
-
-                return string.IsNullOrWhiteSpace(reply) ? null : reply.Trim();
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Gemini request failed or timed out. Falling back.");
-                return null;
-            }
+
+            return null;
         }
     }
 }

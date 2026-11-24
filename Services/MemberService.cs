@@ -264,5 +264,65 @@ namespace GymCrudApp.Services
             await _context.SaveChangesAsync();
             return true;
         }
+        
+        public async Task<(bool Success, string? ErrorMessage)> DeletePermanentlyAsync(int id)
+        {
+            var member = await _context.Members.FirstOrDefaultAsync(m => m.memberId == id);
+            if (member == null)
+            {
+                return (false, "Member not found.");
+            }
+
+            if (member.isActive)
+            {
+                return (false, "Deactivate this member before permanently deleting their record.");
+            }
+
+            var hasRecords =
+                await _context.Memberships.AnyAsync(ms => ms.memberId == id) ||
+                await _context.Payments.AnyAsync(p => p.memberId == id) ||
+                await _context.Attendance.AnyAsync(a => a.memberId == id);
+
+            if (hasRecords)
+            {
+                return (false, "Cannot permanently delete this member because they have existing memberships, payments, or attendance history.");
+            }
+
+            var identityUser = await _userManager.FindByEmailAsync(member.userEmail);
+            if (identityUser != null)
+            {
+                var roles = await _userManager.GetRolesAsync(identityUser);
+                if (roles.Count > 0)
+                {
+                    var removeRolesResult = await _userManager.RemoveFromRolesAsync(identityUser, roles);
+                    if (!removeRolesResult.Succeeded)
+                    {
+                        var roleErrors = string.Join(" ", removeRolesResult.Errors.Select(e => e.Description));
+                        return (false, $"Failed to remove member roles: {roleErrors}");
+                    }
+                }
+
+                var deleteUserResult = await _userManager.DeleteAsync(identityUser);
+                if (!deleteUserResult.Succeeded)
+                {
+                    var deleteErrors = string.Join(" ", deleteUserResult.Errors.Select(e => e.Description));
+                    return (false, $"Failed to delete login account: {deleteErrors}");
+                }
+            }
+
+            var appUser = await _context.Users.FirstOrDefaultAsync(u => u.userId == member.userId);
+
+            _context.Members.Remove(member);
+            if (appUser != null)
+            {
+                _context.Users.Remove(appUser);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return (true, null);
+        }
     }
+    
+    
 }

@@ -1,29 +1,42 @@
 @model GymCrudApp.ViewModels.Members.MemberDetailsViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Deactivate Member";
+    ViewData["Title"] = Model.IsActive ? "Deactivate Member" : "Delete Inactive Member";
 }
 
 <header class="fx-page-head">
-    <h1>Deactivate member</h1>
+    <h1>@(Model.IsActive ? "Deactivate member" : "Delete inactive member")</h1>
 </header>
 
 <div class="fx-card fx-narrow">
-    <div class="fx-list-row">
-        <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.FullName)</span>
-        <div class="fx-list-row__body">
-            <strong>@Model.FullName</strong>
-            <span>@Model.Email</span>
+    <dl class="fx-kv-list">
+        <div class="fx-kv"><dt>Member</dt><dd>@Model.FullName</dd></div>
+        <div class="fx-kv"><dt>Email</dt><dd>@Model.Email</dd></div>
+        <div class="fx-kv"><dt>Contact</dt><dd>@Model.ContactNumber</dd></div>
+        <div class="fx-kv"><dt>Join date</dt><dd>@Model.JoinDate.ToString("MMM d, yyyy")</dd></div>
+        <div class="fx-kv"><dt>Status</dt><dd>@(Model.IsActive ? "Active" : "Inactive")</dd></div>
+    </dl>
+
+    @if (Model.IsActive)
+    {
+        <div class="fx-alert fx-alert--warn">
+            Deactivating locks this member out of the member portal while preserving their payment and attendance history. Are you sure?
         </div>
-    </div>
 
-    <div class="fx-alert fx-alert--warn">
-        Are you sure you want to deactivate <strong>@Model.FullName</strong> (@Model.Email)? Their history will be preserved, but they will no longer be able to log in.
-    </div>
+        <form asp-action="Delete" asp-route-id="@Model.MemberId" method="post" class="fx-form__actions">
+            <button type="submit" class="fx-btn fx-btn--danger">Confirm deactivation</button>
+            <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+        </form>
+    }
+    else
+    {
+        <div class="fx-alert fx-alert--warn">
+            This permanently deletes the member's profile and login account. Members with existing memberships, payments, or attendance logs cannot be deleted. Are you sure?
+        </div>
 
-    <form asp-action="Delete" method="post" class="fx-form__actions">
-        <input type="hidden" asp-for="MemberId" />
-        <button type="submit" class="fx-btn fx-btn--danger">Confirm deactivate</button>
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-    </form>
+        <form asp-action="PermanentDelete" asp-route-id="@Model.MemberId" method="post" class="fx-form__actions">
+            <button type="submit" class="fx-btn fx-btn--danger">Permanently delete</button>
+            <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+        </form>
+    }
 </div>

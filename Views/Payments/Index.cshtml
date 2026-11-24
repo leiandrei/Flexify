@@ -4,15 +4,18 @@
     ViewData["Title"] = "Payments";
     var hasFilter = !string.IsNullOrWhiteSpace(Model.MemberSearch) || Model.FilterDate.HasValue;
 }
- 
+
 <header class="fx-page-head">
     <div class="fx-stack fx-stack--sm">
         <h1>Payments</h1>
         <p class="fx-muted">@Model.Payments.Count @(Model.Payments.Count == 1 ? "payment" : "payments") · @FlexifyUi.Peso(Model.TotalValidAmount) total (voided not counted)</p>
     </div>
-    <a asp-action="Create" class="fx-btn fx-btn--primary">+ Record payment</a>
+    <div class="fx-row">
+        <a asp-controller="ReceiptOcr" asp-action="Upload" class="fx-btn fx-btn--outline">Scan receipt (OCR)</a>
+        <a asp-action="Create" class="fx-btn fx-btn--primary">+ Record payment</a>
+    </div>
 </header>
- 
+
 <form asp-action="Index" method="get" class="fx-search-bar" role="search">
     <div class="fx-field">
         <label class="fx-label" for="memberSearch">Member</label>
@@ -28,7 +31,7 @@
         <a asp-action="Index" class="fx-btn fx-btn--ghost">Clear</a>
     }
 </form>
- 
+
 <div class="fx-table-wrap">
     <table class="fx-table">
         <thead>
@@ -90,4 +93,3 @@
         </tbody>
     </table>
 </div>
- 

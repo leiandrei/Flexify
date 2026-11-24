@@ -18,6 +18,12 @@ namespace GymCrudApp.Controllers
         }
 
         [HttpGet]
+        public IActionResult Index()
+        {
+            return RedirectToAction(nameof(Upload));
+        }
+
+        [HttpGet]
         public IActionResult Upload()
         {
             return View(new ReceiptUploadViewModel());
@@ -34,7 +40,10 @@ namespace GymCrudApp.Controllers
             }
 
             var (success, errorMessage, confirmModel) =
-                await _receiptOcrService.ProcessReceiptUploadAsync(model.ReceiptFile, cancellationToken);
+                await _receiptOcrService.ProcessReceiptUploadAsync(
+                    model.ReceiptFile,
+                    model.ClientOcrRawText,
+                    cancellationToken);
 
             if (!success || confirmModel == null)
             {

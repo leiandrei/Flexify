@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using GymCrudApp.Data;
 using GymCrudApp.Models;
 using GymCrudApp.ViewModels.Account;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +29,6 @@ namespace GymCrudApp.Controllers
             _context = context;
         }
 
-        // GET: /Account/Register
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Register()
@@ -42,7 +41,6 @@ namespace GymCrudApp.Controllers
             return View();
         }
 
-        // POST: /Account/Register
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -53,7 +51,6 @@ namespace GymCrudApp.Controllers
                 return View(model);
             }
 
-            // Prevent duplicate emails across both Identity and custom Users table
             if (await _userManager.FindByEmailAsync(model.Email) != null ||
                 await _context.Users.AnyAsync(u => u.userEmail == model.Email))
             {
@@ -80,10 +77,8 @@ namespace GymCrudApp.Controllers
 
             try
             {
-                // 1. Assign the Member role in ASP.NET Identity
                 await _userManager.AddToRoleAsync(identityUser, "Member");
 
-                // 2. Create linked Users and Members rows in a single DB transaction
                 await using var transaction = await _context.Database.BeginTransactionAsync();
 
                 var appUser = new Users
@@ -113,20 +108,17 @@ namespace GymCrudApp.Controllers
 
                 await transaction.CommitAsync();
 
-                // Sign in the newly registered member and redirect to Member destination
                 await _signInManager.SignInAsync(identityUser, isPersistent: false);
-                return await RedirectByRoleAsync(identityUser);
+                return RedirectToRoleHome("Member");
             }
             catch
             {
-                // Roll back the Identity account if creating Users/Members rows fails
                 await _userManager.DeleteAsync(identityUser);
                 ModelState.AddModelError(string.Empty, "Registration failed while saving member profile. Please try again.");
                 return View(model);
             }
         }
 
-        // GET: /Account/Login
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Login(string? returnUrl = null)
@@ -140,7 +132,6 @@ namespace GymCrudApp.Controllers
             return View();
         }
 
-        // POST: /Account/Login
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
@@ -178,11 +169,11 @@ namespace GymCrudApp.Controllers
                 new Claim(ClaimTypes.Role, user.role)
             };
 
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var identity = new ClaimsIdentity(claims, IdentityConstants.ApplicationScheme);
             var principal = new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
+                IdentityConstants.ApplicationScheme,
                 principal,
                 new AuthenticationProperties { IsPersistent = model.RememberMe });
 
@@ -204,8 +195,7 @@ namespace GymCrudApp.Controllers
                 _ => RedirectToAction("Index", "Home")
             };
         }
-        
-        // POST: /Account/Logout
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
@@ -214,33 +204,11 @@ namespace GymCrudApp.Controllers
             return RedirectToAction(nameof(Login));
         }
 
-        // GET: /Account/AccessDenied
         [HttpGet]
         [AllowAnonymous]
         public IActionResult AccessDenied()
         {
             return View();
-        }
-
-        private async Task<IActionResult> RedirectByRoleAsync(IdentityUser user)
-        {
-            // Update these controller targets as Admin Dashboard, Members CRUD, and Member Portal are built
-            if (await _userManager.IsInRoleAsync(user, "Admin"))
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            if (await _userManager.IsInRoleAsync(user, "Staff"))
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            if (await _userManager.IsInRoleAsync(user, "Member"))
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            return RedirectToAction("Index", "Home");
         }
     }
 }

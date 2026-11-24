@@ -131,5 +131,22 @@ namespace GymCrudApp.Controllers
             TempData["SuccessMessage"] = "Member account deactivated.";
             return RedirectToAction(nameof(Index));
         }
+        
+        // POST: /Members/PermanentDelete/5
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PermanentDelete(int id)
+        {
+            var (success, errorMessage) = await _memberService.DeletePermanentlyAsync(id);
+            if (!success)
+            {
+                TempData["ErrorMessage"] = errorMessage ?? "Unable to delete member.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["SuccessMessage"] = "Inactive member permanently deleted.";
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

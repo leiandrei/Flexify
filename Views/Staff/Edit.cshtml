@@ -1,0 +1,55 @@
+@model GymCrudApp.ViewModels.Staff.StaffEditViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Edit Staff";
+}
+
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Edit staff</h1>
+        <p class="fx-muted">@Model.FullName · @Model.Position</p>
+    </div>
+</header>
+
+<form asp-action="Edit" asp-route-id="@Model.StaffID" method="post" class="fx-card fx-form fx-narrow">
+    <input type="hidden" asp-for="StaffID" />
+    <div asp-validation-summary="ModelOnly"></div>
+
+    <div class="fx-field">
+        <label asp-for="FullName" class="fx-label"></label>
+        <input asp-for="FullName" class="fx-input" autocomplete="name" />
+        <span asp-validation-for="FullName" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="Email" class="fx-label"></label>
+        <input asp-for="Email" class="fx-input" autocomplete="email" />
+        <span asp-validation-for="Email" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="Position" class="fx-label"></label>
+        <input asp-for="Position" class="fx-input" />
+        <span asp-validation-for="Position" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="DateOfBirth" class="fx-label"></label>
+        <input asp-for="DateOfBirth" class="fx-input" />
+        <span asp-validation-for="DateOfBirth" class="fx-error"></span>
+    </div>
+
+    <div class="fx-check">
+        <input asp-for="IsActive" />
+        <label asp-for="IsActive"></label>
+    </div>
+
+    <div class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--primary">Update staff</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

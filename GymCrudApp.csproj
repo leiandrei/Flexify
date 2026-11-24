@@ -28,4 +28,8 @@
     <None Remove="GymCrudApp.Tests\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\uploads\receipts\" />
+  </ItemGroup>
+
 </Project>

@@ -103,3 +103,72 @@ Controllers in `Controllers/` remain thin and declarative:
 | `RenewalServiceTests` & `BusinessRulesTests` | `EndDate + 1` vs. `Today` renewal start rules, atomic transaction rollback, non-cash reference validation, duplicate check-in prevention, daily expiry sweep |
 | `Tier1EdgeCaseTests` | Unassigned member safe defaults, deactivated member check-in block, zero-KPI aggregation on empty database |
 | `SolidArchitectureTests` & `AccessControlTests` | Reflection audit confirming `I*Service` implementation on all domain services, zero direct `GymDbContext` injection in domain controllers, and exact `[Authorize]` role policies across all controllers |
+
+# Phase 3 Session Notes — Flexify
+
+**Session Focus:** AI Front-Desk Chatbot Stabilization & Live Gemini Integration, Responsive UI/UX Refinements, and Expanded Idempotent Demo Database Seeding  
+**Target Branch / Milestone:** Phase 3 Finalization & Demonstration Readiness
+
+---
+
+## 1. Summary of Phase 3 Deliverables
+
+During this session, four targeted improvements were implemented and verified across the presentation, service, and data initialization layers:
+
+1. **Chatbot Widget Asset Resolution & Global Initialization:** Fixed broken relative paths (`../wwwroot/assets/...` $\rightarrow$ `~/assets/...`) in `_ChatbotWidget.cshtml` and removed an early `return;` guard in `wwwroot/js/site.js` so the assistant initializes on every layout page, not just `/ReceiptOcr/Upload`.
+2. **Live Gemini Integration & Resilient Role-Aware Fallback:** Configured Google's OpenAI-compatible Gemini endpoint (`gemini-3.8-flash`) via `dotnet user-secrets`, added retry/fallback resilience for transient `503`/`429` capacity spikes in `LlmChatService`, and upgraded `ChatbotService` to handle **Admin/Staff** operational queries alongside **Member** self-service queries and offline fallbacks.
+3. **Responsive UI/UX Enhancements:** Added tablet (`<= 960px`) sidebar collapse rules, mobile (`<= 640px`) layout adjustments, sticky translucent public topbars, horizontal-scrolling prompt chips, and subtle hover/active micro-interactions in `wwwroot/css/site.css`.
+4. **Expanded Idempotent Demo Seeding:** Refactored `Data/DbInitializer.cs` from `AnyAsync()` table-level checks to key-based `Ensure*Async` helpers, populating 6 membership plans, 10 members across all lifecycle states, 11 payment records across 5 payment methods (including 1 voided transaction), and a 7-day attendance history with 2 active gym-floor check-ins.
+
+---
+
+## 2. Detailed Changes by Component
+
+### A. Frontend Chatbot Widget & Global JavaScript (`_ChatbotWidget.cshtml`, `wwwroot/js/site.js`)
+* **Root Cause 1 (Missing Launcher Icon):** `_ChatbotWidget.cshtml` referenced `../wwwroot/assets/gym-robot-logo-chat-bubble-flexify-v2.png`. Because ASP.NET Core serves `wwwroot` as the web root (`/`), relative traversal above `wwwroot` failed to resolve in the browser.
+  * **Fix:** Retained the asset inside `wwwroot/assets/` and updated both `<img>` tags to `~/assets/gym-robot-logo-chat-bubble-flexify-v2.png`.
+* **Root Cause 2 (Unresponsive Launcher Button):** `wwwroot/js/site.js` executed `if (!form) { return; }` at the top of `DOMContentLoaded` when `#receiptUploadForm` was absent, terminating script execution before `#fxChatbot` event listeners were attached.
+  * **Fix:** Scoped receipt OCR setup inside `if (form) { ... }` so `#fxChatbot` initializes independently across all views.
+
+### B. LLM Integration & Role-Aware Chatbot Service (`LlmChatService.cs`, `ChatbotService.cs`, `ChatbotController.cs`)
+* **Secure Configuration (`dotnet user-secrets`):**
+  * Stored `Llm:ApiKey` outside source control using User Secrets.
+  * Set `Llm:BaseUrl` to `https://generativelanguage.googleapis.com/v1beta/openai/` and updated `Llm:Model` to `gemini-3.8-flash` after resolving deprecated `gemini-2.5-flash` 404 responses.
+  * Hardened `LlmChatService.cs` with `string.IsNullOrWhiteSpace` checks so empty strings in `appsettings.json` do not override default URLs/models, and added automatic retry logic for transient HTTP `429` / `503` responses.
+* **Role-Aware Context & Smart Fallback (`ChatbotService.cs`):**
+  * **Member Role (`User.IsInRole("Member")`):** Injects verified subscription plan, status, expiration date, days remaining, latest non-voided payment, and recent check-in logs into the system prompt and local fallback matcher.
+  * **Admin / Staff Roles (`User.IsInRole("Admin") || User.IsInRole("Staff")`):** Queries `GymDbContext` via `LoadAdminSnapshotAsync` to supply live active/inactive member counts, active subscriptions, memberships expiring within 7 days, monthly non-voided revenue, and today's gym-floor check-in metrics.
+  * **Dynamic Suggested Prompts:** Added `GetDefaultSuggestedPrompts(ClaimsPrincipal user)` on `IChatbotService` so `GET /Chatbot/Prompts` tailors prompt chips to Public, Member, or Staff/Admin sessions.
+  * **Unit Test Compatibility:** Kept `GymDbContext? context = null` as an optional constructor parameter and preserved `Intent = "Fallback"` so existing `ChatbotServiceTests` pass without breaking.
+
+### C. Responsive UI/UX Refinements (`wwwroot/css/site.css`)
+* **Tablet Breakpoint (`@media (max-width: 960px)`):** Converts `.fx-admin` from a fixed side-by-side layout into a stacked column layout with a wrapping top navigation bar, preventing cramped content areas on mid-sized viewports.
+* **Mobile Breakpoint (`@media (max-width: 640px)`):** Stacks page header buttons and form actions to full width, collapses `.fx-choice-grid` to a single column, compacts table padding, and constrains `.fx-chat__window` to `calc(100vw - 24px)` and `72vh` max-height.
+* **Prompt Chips & Tactile Feedback:** Converted `.fx-chat__prompts` to a single horizontal scrollable strip (`flex-wrap: nowrap; overflow-x: auto`) to preserve vertical chat transcript space, made `.fx-topbar` sticky with `backdrop-filter: blur(8px)`, and added subtle hover elevation on `.fx-stat` and `.fx-gym-card`.
+
+### D. Expanded Idempotent Demo Database Seeder (`Data/DbInitializer.cs`)
+* Replaced table-level `if (!await _context.<Table>.AnyAsync())` guards with idempotent lookup helpers (`EnsureStaffAsync`, `EnsurePlanAsync`, `EnsureMemberAsync`, `EnsureMembershipAsync`, `EnsurePaymentAsync`), allowing new demo records to seed safely onto existing databases without running new EF Core migrations.
+
+---
+
+## 3. Seeded Demo Accounts & Test Scenarios
+
+| Role | Email | Password | Seeded State / Demo Scenario |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@gmail.com` | `Admin@12345` | Full access to Admin Dashboard, Staff management, Plans, and permanent deletes |
+| **Staff** | `staff@gmail.com` | `Staff@12345` | Front-desk operations: Check-in/out, Payments, Receipt OCR |
+| **Member (Active)** | `carlos.mendoza@gmail.com` | `Member@12345` | Active **Quarterly Pro** plan (71 days remaining), GCash payment history, multi-day check-in logs |
+| **Member (Expiring)** | `bianca.lim@gmail.com` | `Member@12345` | **Monthly Basic** expiring in **3 days** (triggers 7-day renewal alert) |
+| **Member (Expired)** | `rafael.torres@gmail.com` | `Member@12345` | **Monthly Basic** expired **10 days ago** (demonstrates check-in block & renewal flow) |
+| **Member (Unassigned)** | `sofia.garcia@gmail.com` | `Member@12345` | Registered member with no subscription assigned yet |
+| **Member (Inactive)** | `denise.navarro@gmail.com` | `Member@12345` | Deactivated/locked-out account (`isActive = false`) |
+
+---
+
+## 4. Verification Checklist
+
+* [x] Chatbot launcher renders `~/assets/gym-robot-logo-chat-bubble-flexify-v2.png` and opens/closes cleanly across public, member, and admin pages.
+* [x] `dotnet user-secrets` configured for `Llm:ApiKey`, `Llm:BaseUrl`, and `Llm:Model` (`gemini-3.8-flash`).
+* [x] Role-aware chatbot responses verified for **Member** (`"When does my membership expire?"`) and **Admin/Staff** (`"How many active members do we have?"`), both online and under simulated fallback.
+* [x] Expanded demo dataset verified on `/AdminDashboard` (6 active members, 2 expiring within 7 days, ₱9,250 monthly revenue, 7-day attendance bar chart) and `/MemberPortal`.
+* [x] Unit test suite (`dotnet test --no-incremental`) passing.

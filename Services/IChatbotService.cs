@@ -9,5 +9,6 @@ namespace GymCrudApp.Services
     {
         Task<ChatResponseViewModel> ProcessMessageAsync(string message, ClaimsPrincipal? user);
         IReadOnlyList<string> GetDefaultSuggestedPrompts(bool isAuthenticatedMember);
+        IReadOnlyList<string> GetDefaultSuggestedPrompts(ClaimsPrincipal user);
     }
 }

@@ -18,14 +18,11 @@ namespace GymCrudApp.Services
 {
     public class ReceiptOcrService : IReceiptOcrService
     {
-        public const long MaxFileSizeBytes = 5 * 1024 * 1024;
+        public const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
 
-        private static readonly Dictionary<string, string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            [".jpg"] = "image/jpeg",
-            [".jpeg"] = "image/jpeg",
-            [".png"] = "image/png",
-            [".pdf"] = "application/pdf"
+            ".jpg", ".jpeg", ".png", ".webp", ".pdf"
         };
 
         private readonly GymDbContext _context;
@@ -42,90 +39,93 @@ namespace GymCrudApp.Services
             _environment = environment;
         }
 
-        public (bool IsValid, string? ErrorMessage) ValidateUpload(IFormFile? file)
+        public (bool IsValid, string? ErrorMessage) ValidateUpload(IFormFile? receiptFile)
         {
-            if (file == null || file.Length == 0)
-                return (false, "Please select a non-empty receipt file (JPG, PNG, or PDF).");
+            if (receiptFile == null || receiptFile.Length == 0)
+            {
+                return (false, "Please select a non-empty receipt file.");
+            }
 
-            if (file.Length > MaxFileSizeBytes)
-                return (false, "Receipt file size must be 5 MB or less.");
+            if (receiptFile.Length > MaxFileSizeBytes)
+            {
+                return (false, "Receipt file exceeds the 5 MB size limit.");
+            }
 
-            var extension = Path.GetExtension(file.FileName);
-            if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.ContainsKey(extension))
-                return (false, "Unsupported file type. Only JPG, PNG, and PDF receipts are allowed.");
+            var extension = Path.GetExtension(receiptFile.FileName);
+            if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.Contains(extension))
+            {
+                return (false, "Unsupported file type. Upload a JPG, PNG, WebP, or PDF receipt.");
+            }
 
             return (true, null);
         }
 
-        public async Task<(bool Success, string? ErrorMessage, ReceiptConfirmViewModel? Model)> ProcessReceiptUploadAsync(
-            IFormFile file,
+        public Task<(bool Success, string? ErrorMessage, ReceiptConfirmViewModel? ConfirmModel)> ProcessReceiptUploadAsync(
+            IFormFile receiptFile,
+            CancellationToken cancellationToken = default)
+            => ProcessReceiptUploadAsync(receiptFile, null, cancellationToken);
+
+        public async Task<(bool Success, string? ErrorMessage, ReceiptConfirmViewModel? ConfirmModel)> ProcessReceiptUploadAsync(
+            IFormFile receiptFile,
+            string? clientRawText,
             CancellationToken cancellationToken = default)
         {
-            var (isValid, error) = ValidateUpload(file);
+            var (isValid, validationError) = ValidateUpload(receiptFile);
             if (!isValid)
-                return (false, error, null);
+            {
+                return (false, validationError, null);
+            }
 
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var mimeType = AllowedExtensions[extension];
+            var extension = Path.GetExtension(receiptFile.FileName).ToLowerInvariant();
+            var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "receipts");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var storedFileName = $"{Guid.NewGuid():N}{extension}";
+            var physicalPath = Path.Combine(uploadsFolder, storedFileName);
+            var relativePath = $"/uploads/receipts/{storedFileName}";
 
             byte[] fileBytes;
-            using (var ms = new MemoryStream())
+            await using (var ms = new MemoryStream())
             {
-                await file.CopyToAsync(ms, cancellationToken);
+                await receiptFile.CopyToAsync(ms, cancellationToken);
                 fileBytes = ms.ToArray();
             }
 
-            var webRoot = string.IsNullOrWhiteSpace(_environment.WebRootPath)
-                ? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")
-                : _environment.WebRootPath;
-
-            var uploadsFolder = Path.Combine(webRoot, "uploads", "receipts");
-            Directory.CreateDirectory(uploadsFolder);
-
-            var randomFileName = $"{Guid.NewGuid():N}{extension}";
-            var physicalPath = Path.Combine(uploadsFolder, randomFileName);
             await File.WriteAllBytesAsync(physicalPath, fileBytes, cancellationToken);
 
-            var relativePath = $"/uploads/receipts/{randomFileName}";
+            var rawText = clientRawText?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(rawText))
+            {
+                var mimeType = extension switch
+                {
+                    ".pdf" => "application/pdf",
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".webp" => "image/webp",
+                    _ => "image/png"
+                };
 
-            var rawText = await _ocrService.ExtractRawTextAsync(fileBytes, mimeType, cancellationToken);
+                rawText = await _ocrService.ExtractRawTextAsync(fileBytes, mimeType, cancellationToken);
+            }
+
             var candidates = ParseReceiptText(rawText);
 
-            var model = new ReceiptConfirmViewModel
+            var confirmModel = new ReceiptConfirmViewModel
             {
                 ReceiptImagePath = relativePath,
                 OcrRawText = string.IsNullOrWhiteSpace(rawText) ? null : rawText,
                 Amount = candidates.Amount,
-                PaymentDate = candidates.PaymentDate ?? DateTime.Today,
-                ReferenceNumber = candidates.ReferenceNumber,
                 PaymentType = candidates.PaymentType ?? "GCash",
+                ReferenceNumber = candidates.ReferenceNumber,
+                PaymentDate = candidates.PaymentDate ?? DateTime.Today,
                 ExtractedFieldCount = candidates.ExtractedFieldCount,
                 OcrFoundNothing = candidates.ExtractedFieldCount == 0
             };
 
-            await PrepareConfirmationModelAsync(model, cancellationToken);
-            return (true, null, model);
+            await PrepareConfirmationModelAsync(confirmModel, cancellationToken);
+            return (true, null, confirmModel);
         }
 
-        public ParsedReceiptCandidates ParseReceiptText(string rawText)
-        {
-            var result = new ParsedReceiptCandidates
-            {
-                RawText = rawText ?? string.Empty
-            };
-
-            if (string.IsNullOrWhiteSpace(rawText))
-                return result;
-
-            result.Amount = ExtractAmountNearestTotal(rawText);
-            result.PaymentDate = ExtractDate(rawText);
-            result.ReferenceNumber = ExtractReferenceNumber(rawText);
-            result.PaymentType = DetectPaymentType(rawText);
-
-            return result;
-        }
-
-        public async Task<ReceiptConfirmViewModel> PrepareConfirmationModelAsync(
+        public async Task PrepareConfirmationModelAsync(
             ReceiptConfirmViewModel model,
             CancellationToken cancellationToken = default)
         {
@@ -133,59 +133,63 @@ namespace GymCrudApp.Services
                 .Include(m => m.Member)
                 .Include(m => m.Plan)
                 .OrderByDescending(m => m.isActive)
-                .ThenByDescending(m => m.endDate)
+                .ThenBy(m => m.Member != null ? m.Member.fullName : string.Empty)
+                .ToListAsync(cancellationToken);
+
+            model.AvailableMemberships = memberships
+                .Where(m => m.Member != null && m.Plan != null)
                 .Select(m => new MembershipOptionViewModel
                 {
                     MembershipId = m.membershipId,
-                    PlanPrice = m.Plan != null ? m.Plan.planPrice : 0m,
-                    DisplayLabel = $"{(m.Member != null ? m.Member.fullName : "Member #" + m.memberId)} — {(m.Plan != null ? m.Plan.planName : "Plan")} (Expires {m.endDate:MMM dd, yyyy})"
+                    DisplayLabel = $"{m.Member!.fullName} — {m.Plan!.planName} ({(m.isActive ? "Active" : "Inactive")}, ends {m.endDate:MMM d, yyyy})",
+                    PlanPrice = m.Plan!.planPrice
                 })
-                .ToListAsync(cancellationToken);
-
-            model.AvailableMemberships = memberships;
-            return model;
+                .ToList();
         }
 
         public async Task<(bool Success, string? ErrorMessage, int? PaymentId)> ConfirmAndSavePaymentAsync(
             ReceiptConfirmViewModel model,
-            ClaimsPrincipal staffUser,
+            ClaimsPrincipal user,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(model.ReceiptImagePath))
-                return (false, "Receipt image path is required.", null);
+            var membership = await _context.Memberships
+                .FirstOrDefaultAsync(m => m.membershipId == model.MembershipId, cancellationToken);
 
-            if (!model.Amount.HasValue || model.Amount.Value <= 0)
-                return (false, "Payment amount must be greater than zero.", null);
+            if (membership == null)
+            {
+                return (false, "Selected membership could not be found.", null);
+            }
 
-            if (string.IsNullOrWhiteSpace(model.PaymentType))
-                return (false, "Payment type is required.", null);
+            var cleanedRef = string.IsNullOrWhiteSpace(model.ReferenceNumber)
+                ? null
+                : Regex.Replace(model.ReferenceNumber.Trim(), @"\s+", "");
 
-            var requiresReference = !model.PaymentType.Equals("Cash", StringComparison.OrdinalIgnoreCase);
-            if (requiresReference && string.IsNullOrWhiteSpace(model.ReferenceNumber))
-                return (false, $"A reference number is required for {model.PaymentType} payments.", null);
+            if (!string.Equals(model.PaymentType, "Cash", StringComparison.OrdinalIgnoreCase) &&
+                string.IsNullOrWhiteSpace(cleanedRef))
+            {
+                return (false, "Reference number is required for non-cash payments.", null);
+            }
 
-            var membershipExists = await _context.Memberships
-                .AnyAsync(m => m.membershipId == model.MembershipId, cancellationToken);
-            if (!membershipExists)
-                return (false, "Selected membership record was not found.", null);
-
-            var staffId = await ResolveStaffIdAsync(staffUser, cancellationToken);
-            if (!staffId.HasValue)
-                return (false, "Unable to identify the logged-in staff account.", null);
+            var staffId = await ResolveRecordingStaffIdAsync(user, cancellationToken);
+            if (staffId == 0)
+            {
+                return (false, "No staff profile found to record this payment.", null);
+            }
 
             var payment = new Payments
             {
-                membershipId = model.MembershipId,
-                recordedByStaffId = staffId.Value,
-                amount = model.Amount.Value,
-                paymentType = model.PaymentType.Trim(),
-                referenceNumber = string.IsNullOrWhiteSpace(model.ReferenceNumber)
-                    ? null
-                    : model.ReferenceNumber.Trim(),
-                paymentDate = model.PaymentDate,
+                memberId = membership.memberId,
+                membershipId = membership.membershipId,
+                amount = model.Amount!.Value,
+                paymentType = model.PaymentType,
+                referenceNumber = cleanedRef,
+                receiptImagePath = model.ReceiptImagePath,
+                ocrRawText = model.OcrRawText,
                 isVoided = false,
-                receiptImagePath = model.ReceiptImagePath.Trim(),
-                ocrRawText = model.OcrRawText
+                paymentDate = model.PaymentDate.Date == DateTime.Today
+                    ? DateTime.Now
+                    : model.PaymentDate,
+                recordedByStaffId = staffId
             };
 
             _context.Payments.Add(payment);
@@ -194,87 +198,135 @@ namespace GymCrudApp.Services
             return (true, null, payment.paymentId);
         }
 
-        private async Task<int?> ResolveStaffIdAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
+        private async Task<int> ResolveRecordingStaffIdAsync(
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken)
         {
-            var userIdStr = user?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (int.TryParse(userIdStr, out var userId))
+            var idClaim = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(idClaim, out var claimUserId))
             {
-                var staff = await _context.Staff
-                    .FirstOrDefaultAsync(s => s.userId == userId, cancellationToken);
-                if (staff != null)
-                    return staff.StaffID;
-            }
+                var staffByUserId = await _context.Staff
+                    .FirstOrDefaultAsync(s => s.userId == claimUserId, cancellationToken);
 
-            var fallbackStaff = await _context.Staff.FirstOrDefaultAsync(cancellationToken);
-            return fallbackStaff?.StaffID;
-        }
-
-        private static decimal? ExtractAmountNearestTotal(string text)
-        {
-            var totalRegex = new Regex(
-                @"(?i)\btotal(?:\s+(?:amount|paid|due|payment))?\b[^\d\r\n]{0,20}(?:₱|PHP|Php|P)?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})|[0-9]+(?:\.[0-9]{2})?)",
-                RegexOptions.Multiline);
-
-            var totalMatches = totalRegex.Matches(text);
-            if (totalMatches.Count > 0)
-            {
-                var rawNum = totalMatches[^1].Groups[1].Value.Replace(",", "");
-                if (decimal.TryParse(rawNum, NumberStyles.Number, CultureInfo.InvariantCulture, out var totalVal) && totalVal > 0)
-                    return totalVal;
-            }
-
-            var currencyRegex = new Regex(
-                @"(?i)(?:\bamount(?:\s+paid|\s+sent)?\b[^\d\r\n]{0,15}|(?:₱|PHP)\s*)([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})|[0-9]+\.[0-9]{2})");
-
-            var currencyMatch = currencyRegex.Match(text);
-            if (currencyMatch.Success)
-            {
-                var rawNum = currencyMatch.Groups[1].Value.Replace(",", "");
-                if (decimal.TryParse(rawNum, NumberStyles.Number, CultureInfo.InvariantCulture, out var currVal) && currVal > 0)
-                    return currVal;
-            }
-
-            return null;
-        }
-
-        private static DateTime? ExtractDate(string text)
-        {
-            var datePatterns = new[]
-            {
-                @"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b",
-                @"\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}\b",
-                @"\b\d{4}-\d{2}-\d{2}\b",
-                @"\b\d{1,2}/\d{1,2}/\d{4}\b"
-            };
-
-            foreach (var pattern in datePatterns)
-            {
-                var match = Regex.Match(text, pattern, RegexOptions.IgnoreCase);
-                if (match.Success && DateTime.TryParse(match.Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+                if (staffByUserId != null)
                 {
-                    return parsed.Date;
+                    return staffByUserId.StaffID;
                 }
             }
 
-            return null;
+            var email = user.FindFirstValue(ClaimTypes.Email) ?? user.Identity?.Name;
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var appUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.userEmail == email, cancellationToken);
+
+                if (appUser != null)
+                {
+                    var matchingStaff = await _context.Staff
+                        .FirstOrDefaultAsync(s => s.userId == appUser.userId, cancellationToken);
+
+                    if (matchingStaff != null)
+                    {
+                        return matchingStaff.StaffID;
+                    }
+                }
+            }
+
+            var fallbackStaff = await _context.Staff
+                .OrderBy(s => s.StaffID)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return fallbackStaff?.StaffID ?? 0;
         }
 
-        private static string? ExtractReferenceNumber(string text)
+        public ParsedReceiptCandidates ParseReceiptText(string? rawText)
         {
-            var refRegex = new Regex(
-                @"(?i)\b(?:ref(?:erence)?\s*(?:no\.?|number|#|:)?|trace\s*(?:no\.?|#|:)?|transaction\s*(?:id|no\.?|#|:))\s*[:#-]?\s*([A-Z0-9-]{6,25})\b");
+            var result = new ParsedReceiptCandidates { RawText = rawText ?? string.Empty };
+            if (string.IsNullOrWhiteSpace(rawText))
+            {
+                return result;
+            }
 
-            var match = refRegex.Match(text);
-            return match.Success ? match.Groups[1].Value.Trim() : null;
-        }
+            // 1. Detect payment method
+            if (Regex.IsMatch(rawText, @"\bgcash\b", RegexOptions.IgnoreCase))
+            {
+                result.PaymentType = "GCash";
+            }
+            else if (Regex.IsMatch(rawText, @"\b(pay)?maya\b", RegexOptions.IgnoreCase))
+            {
+                result.PaymentType = "Maya";
+            }
+            else if (Regex.IsMatch(rawText, @"\b(bank|bpi|bdo|unionbank|metrobank|landbank|instapay|pesonet|transfer)\b", RegexOptions.IgnoreCase))
+            {
+                result.PaymentType = "Bank Transfer";
+            }
+            else if (Regex.IsMatch(rawText, @"\b(visa|mastercard|card)\b", RegexOptions.IgnoreCase))
+            {
+                result.PaymentType = "Card";
+            }
 
-        private static string? DetectPaymentType(string text)
-        {
-            if (Regex.IsMatch(text, @"\bgcash\b", RegexOptions.IgnoreCase)) return "GCash";
-            if (Regex.IsMatch(text, @"\bpaymaya\b|\bmaya\b", RegexOptions.IgnoreCase)) return "Maya";
-            if (Regex.IsMatch(text, @"\binstapay\b|\bpesonet\b|\bbank\s*transfer\b|\bbpi\b|\bbdo\b|\bunionbank\b", RegexOptions.IgnoreCase)) return "Bank Transfer";
-            if (Regex.IsMatch(text, @"\bvisa\b|\bmastercard\b|\bcredit\s*card\b|\bdebit\s*card\b", RegexOptions.IgnoreCase)) return "Card";
-            return null;
+            // 2. Extract amount — prioritize "Total" labels before subtotals or generic currency values
+            // 2. Extract amount — prioritize standalone "Total" labels (ignoring "Subtotal")
+            var amountMatch = Regex.Match(
+                rawText,
+                @"\b(?:Total(?:\s*(?:Amount\s*Paid|Amount|Due|Paid))?|Amount\s*Paid)\s*:?\s*(?:PHP|Php|₱)?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})|[0-9]+(?:\.[0-9]{2}))",
+                RegexOptions.IgnoreCase);
+
+            if (!amountMatch.Success)
+            {
+                amountMatch = Regex.Match(
+                    rawText,
+                    @"(?:PHP|Php|₱|Amount|Sent)\s*:?\s*₱?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})|[0-9]+(?:\.[0-9]{2}))",
+                    RegexOptions.IgnoreCase);
+            }
+
+            if (!amountMatch.Success)
+            {
+                amountMatch = Regex.Match(rawText, @"₱?\s*([0-9]{1,3}(?:,[0-9]{3})*\.[0-9]{2})");
+            }
+
+            if (amountMatch.Success &&
+                decimal.TryParse(
+                    amountMatch.Groups[1].Value.Replace(",", ""),
+                    NumberStyles.Number,
+                    CultureInfo.InvariantCulture,
+                    out var parsedAmount) &&
+                parsedAmount > 0)
+            {
+                result.Amount = parsedAmount;
+            }
+
+            // 3. Extract reference number
+            var refMatch = Regex.Match(
+                rawText,
+                @"(?:Ref(?:erence)?\s*(?:No\.?|Number|#)?|Trace\s*No\.?|Transaction\s*ID)\s*:?[ \t]*([A-Za-z0-9][A-Za-z0-9 \t-]{4,35})",
+                RegexOptions.IgnoreCase);
+
+            if (refMatch.Success)
+            {
+                var normalizedRef = Regex.Replace(refMatch.Groups[1].Value.Trim(), @"\s+", "");
+                normalizedRef = Regex.Replace(normalizedRef, @"[^a-zA-Z0-9-]", "");
+                if (normalizedRef.Length >= 5)
+                {
+                    result.ReferenceNumber = normalizedRef;
+                }
+            }
+
+            // 4. Extract payment date
+            var dateMatch = Regex.Match(
+                rawText,
+                @"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}/\d{1,2}/\d{4}\b",
+                RegexOptions.IgnoreCase);
+
+            if (dateMatch.Success &&
+                DateTime.TryParse(dateMatch.Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate) &&
+                parsedDate.Year >= 2020 &&
+                parsedDate.Date <= DateTime.Today.AddDays(1))
+            {
+                result.PaymentDate = parsedDate.Date;
+            }
+
+            return result;
         }
     }
 }

@@ -1,0 +1,49 @@
+@model GymCrudApp.ViewModels.Staff.StaffDetailsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Staff Details";
+    var statusLabel = Model.IsActive ? "Active" : "Inactive";
+}
+
+<header class="fx-page-head">
+    <div class="fx-page-head__title">
+        <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.FullName)</span>
+        <div class="fx-stack fx-stack--sm">
+            <h1>@Model.FullName</h1>
+            <p class="fx-muted">@Model.Position · @Model.Email</p>
+        </div>
+    </div>
+    <div class="fx-row">
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Back to list</a>
+        <a asp-action="Delete" asp-route-id="@Model.StaffID" class="fx-btn fx-btn--danger-outline">Delete</a>
+        <a asp-action="Edit" asp-route-id="@Model.StaffID" class="fx-btn fx-btn--primary">Edit staff</a>
+    </div>
+</header>
+
+<div class="fx-split">
+    <section class="fx-card fx-split__main" aria-labelledby="staff-heading">
+        <div class="fx-card__head">
+            <h2 id="staff-heading">Profile</h2>
+            <span class="@FlexifyUi.StatusBadge(statusLabel)">@statusLabel</span>
+        </div>
+        <dl class="fx-kv-list">
+            <div class="fx-kv"><dt>Staff ID</dt><dd>#@Model.StaffID</dd></div>
+            <div class="fx-kv"><dt>User account ID</dt><dd>#@Model.UserId</dd></div>
+            <div class="fx-kv"><dt>Email</dt><dd>@Model.Email</dd></div>
+            <div class="fx-kv"><dt>Position</dt><dd>@Model.Position</dd></div>
+            <div class="fx-kv"><dt>Date of birth</dt><dd>@Model.DateOfBirth.ToString("MMM d, yyyy")</dd></div>
+            <div class="fx-kv"><dt>Account status</dt><dd>@statusLabel</dd></div>
+        </dl>
+    </section>
+
+    <section class="fx-card fx-split__side" aria-labelledby="access-heading">
+        <div class="fx-card__head">
+            <h2 id="access-heading">Backoffice access</h2>
+        </div>
+        <dl class="fx-kv-list">
+            <div class="fx-kv"><dt>System role</dt><dd>Staff</dd></div>
+            <div class="fx-kv"><dt>Sign-in access</dt><dd>@(Model.IsActive ? "Enabled" : "Disabled")</dd></div>
+        </dl>
+        <p class="fx-muted">Staff accounts can manage members, memberships, payments, and front-desk attendance check-ins.</p>
+    </section>
+</div>

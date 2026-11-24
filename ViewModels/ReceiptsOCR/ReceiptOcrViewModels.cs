@@ -9,6 +9,8 @@ namespace GymCrudApp.ViewModels.ReceiptOcr
     {
         [Required(ErrorMessage = "Please select a receipt image or PDF to upload.")]
         public IFormFile? ReceiptFile { get; set; }
+
+        public string? ClientOcrRawText { get; set; }
     }
 
     public class ParsedReceiptCandidates

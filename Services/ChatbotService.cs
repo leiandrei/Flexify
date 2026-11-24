@@ -4,7 +4,10 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using GymCrudApp.Data;
 using GymCrudApp.ViewModels.Chatbot;
+using GymCrudApp.ViewModels.MemberPortal;
+using Microsoft.EntityFrameworkCore;
 
 namespace GymCrudApp.Services
 {
@@ -13,15 +16,18 @@ namespace GymCrudApp.Services
         private readonly IMemberPortalService _memberPortalService;
         private readonly ILandingPageService _landingPageService;
         private readonly ILlmChatService _llmChatService;
+        private readonly GymDbContext? _context;
 
         public ChatbotService(
             IMemberPortalService memberPortalService,
             ILandingPageService landingPageService,
-            ILlmChatService llmChatService)
+            ILlmChatService llmChatService,
+            GymDbContext? context = null)
         {
             _memberPortalService = memberPortalService;
             _landingPageService = landingPageService;
             _llmChatService = llmChatService;
+            _context = context;
         }
 
         public IReadOnlyList<string> GetDefaultSuggestedPrompts(bool isAuthenticatedMember)
@@ -46,9 +52,26 @@ namespace GymCrudApp.Services
             };
         }
 
+        private static IReadOnlyList<string> GetStaffSuggestedPrompts()
+        {
+            return new[]
+            {
+                "How many active members do we have?",
+                "Who has memberships expiring soon?",
+                "What is our revenue this month?",
+                "How many check-ins do we have today?"
+            };
+        }
+
         public async Task<ChatResponseViewModel> ProcessMessageAsync(string message, ClaimsPrincipal? user)
         {
-            var isMember = user?.Identity?.IsAuthenticated == true && user.IsInRole("Member");
+            var isAuthenticated = user?.Identity?.IsAuthenticated == true;
+            var isMember = isAuthenticated && user!.IsInRole("Member");
+            var isStaffOrAdmin = isAuthenticated && (user!.IsInRole("Admin") || user!.IsInRole("Staff"));
+
+            var suggestedPrompts = isStaffOrAdmin
+                ? GetStaffSuggestedPrompts().ToList()
+                : GetDefaultSuggestedPrompts(isMember).ToList();
 
             if (string.IsNullOrWhiteSpace(message))
             {
@@ -56,22 +79,36 @@ namespace GymCrudApp.Services
                 {
                     Intent = "Empty",
                     Reply = "Please enter a question or pick one of the suggested prompts below.",
-                    SuggestedPrompts = GetDefaultSuggestedPrompts(isMember).ToList()
+                    SuggestedPrompts = suggestedPrompts
                 };
             }
 
             var landingData = await _landingPageService.GetLandingPageDataAsync();
             var accountContext = new StringBuilder();
             var isAccountScoped = false;
+            MemberPortalViewModel? portal = null;
+            AdminSnapshot? adminSnapshot = null;
 
-            if (isMember && user != null)
+            if (isStaffOrAdmin && _context != null)
+            {
+                isAccountScoped = true;
+                adminSnapshot = await LoadAdminSnapshotAsync(_context);
+
+                accountContext.AppendLine("AUTHENTICATED ADMIN/STAFF CONTEXT (Verified live gym metrics):");
+                accountContext.AppendLine($"- Total Registered Members: {adminSnapshot.TotalMembers} ({adminSnapshot.ActiveMembers} active, {adminSnapshot.InactiveMembers} inactive)");
+                accountContext.AppendLine($"- Active Subscriptions: {adminSnapshot.ActiveSubscriptions}");
+                accountContext.AppendLine($"- Expiring Within 7 Days ({adminSnapshot.ExpiringCount}): {(adminSnapshot.ExpiringNames.Any() ? string.Join(", ", adminSnapshot.ExpiringNames) : "None")}");
+                accountContext.AppendLine($"- Revenue This Month: ₱{adminSnapshot.MonthlyRevenue:N2}");
+                accountContext.AppendLine($"- Today's Check-Ins: {adminSnapshot.TodayCheckIns} ({adminSnapshot.CurrentlyOnFloor} currently checked in on the gym floor)");
+            }
+            else if (isMember && user != null)
             {
                 int? userId = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedId)
                     ? parsedId
                     : null;
                 var email = user.FindFirstValue(ClaimTypes.Email);
 
-                var portal = await _memberPortalService.GetPortalForUserAsync(userId, email);
+                portal = await _memberPortalService.GetPortalForUserAsync(userId, email);
                 if (portal != null)
                 {
                     isAccountScoped = true;
@@ -99,7 +136,7 @@ namespace GymCrudApp.Services
             }
             else
             {
-                accountContext.AppendLine("AUTHENTICATED MEMBER CONTEXT: User is NOT logged in as a Member. If they ask about their personal subscription, payments, or attendance, instruct them to log in to their Member account.");
+                accountContext.AppendLine("AUTHENTICATED MEMBER CONTEXT: User is NOT logged in as a Member or Staff. If they ask about personal subscriptions or internal gym statistics, instruct them to log in first.");
             }
 
             var plansText = landingData.Plans.Any()
@@ -121,7 +158,8 @@ FACILITY INFO:
 
 {accountContext}";
 
-            var llmReply = await _llmChatService.GenerateReplyAsync(systemPrompt, message.Trim());
+            var trimmedMessage = message.Trim();
+            var llmReply = await _llmChatService.GenerateReplyAsync(systemPrompt, trimmedMessage);
 
             if (!string.IsNullOrWhiteSpace(llmReply))
             {
@@ -130,17 +168,216 @@ FACILITY INFO:
                     Intent = isAccountScoped ? "LLM.AccountAware" : "LLM.General",
                     IsAccountScoped = isAccountScoped,
                     Reply = llmReply,
-                    SuggestedPrompts = GetDefaultSuggestedPrompts(isMember).ToList()
+                    SuggestedPrompts = suggestedPrompts
                 };
             }
+
+            var (_, fallbackScoped, fallbackReply) =
+                BuildSmartFallbackReply(trimmedMessage, isMember, isStaffOrAdmin, portal, adminSnapshot, landingData, plansText);
 
             return new ChatResponseViewModel
             {
                 Intent = "Fallback",
-                IsAccountScoped = false,
-                Reply = $"Our assistant is temporarily in offline mode. Current plans: {plansText}. Operating hours: {landingData.OperatingHours}. Contact: {landingData.ContactPhone}.",
-                SuggestedPrompts = GetDefaultSuggestedPrompts(isMember).ToList()
+                IsAccountScoped = fallbackScoped,
+                Reply = fallbackReply,
+                SuggestedPrompts = suggestedPrompts
             };
         }
+
+        private static async Task<AdminSnapshot> LoadAdminSnapshotAsync(GymDbContext context)
+        {
+            var today = DateTime.Today;
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var sevenDaysOut = today.AddDays(7);
+
+            var totalMembers = await context.Members.CountAsync();
+            var activeMembers = await context.Members.CountAsync(m => m.isActive);
+
+            var activeSubscriptions = await context.Memberships
+                .CountAsync(ms => ms.isActive && ms.endDate.Date >= today);
+
+            var expiringList = await context.Memberships
+                .AsNoTracking()
+                .Include(ms => ms.Member)
+                .Include(ms => ms.Plan)
+                .Where(ms => ms.isActive && ms.endDate.Date >= today && ms.endDate.Date <= sevenDaysOut)
+                .OrderBy(ms => ms.endDate)
+                .Select(ms => new
+                {
+                    Name = ms.Member != null ? ms.Member.fullName : $"Member #{ms.memberId}",
+                    EndDate = ms.endDate
+                })
+                .ToListAsync();
+
+            var monthlyRevenue = await context.Payments
+                .Where(p => !p.isVoided && p.paymentDate >= monthStart)
+                .SumAsync(p => (decimal?)p.amount) ?? 0m;
+
+            var todayCheckIns = await context.Attendance
+                .CountAsync(a => a.checkIn >= today && a.checkIn < today.AddDays(1));
+
+            var currentlyOnFloor = await context.Attendance
+                .CountAsync(a => a.checkIn >= today && a.checkOut == null);
+
+            return new AdminSnapshot(
+                totalMembers,
+                activeMembers,
+                totalMembers - activeMembers,
+                activeSubscriptions,
+                expiringList.Count,
+                expiringList.Select(x => $"{x.Name} (expires {x.EndDate:MMM dd})").ToList(),
+                monthlyRevenue,
+                todayCheckIns,
+                currentlyOnFloor);
+        }
+
+        private static (string Intent, bool IsAccountScoped, string Reply) BuildSmartFallbackReply(
+            string message,
+            bool isMember,
+            bool isStaffOrAdmin,
+            MemberPortalViewModel? portal,
+            AdminSnapshot? adminSnapshot,
+            dynamic landingData,
+            string plansText)
+        {
+            var q = message.ToLowerInvariant();
+
+            // 1. Admin / Staff operational queries
+            if (isStaffOrAdmin && adminSnapshot != null)
+            {
+                if (q.Contains("expir") || q.Contains("due") || q.Contains("renew soon"))
+                {
+                    if (adminSnapshot.ExpiringCount == 0)
+                    {
+                        return ("Fallback.AdminMetrics", true, "There are no active memberships expiring within the next 7 days.");
+                    }
+
+                    return ("Fallback.AdminMetrics", true,
+                        $"There {(adminSnapshot.ExpiringCount == 1 ? "is" : "are")} {adminSnapshot.ExpiringCount} {(adminSnapshot.ExpiringCount == 1 ? "membership" : "memberships")} expiring within 7 days: {string.Join(", ", adminSnapshot.ExpiringNames)}.");
+                }
+
+                if (q.Contains("revenue") || q.Contains("income") || q.Contains("sales") || q.Contains("earn") || q.Contains("collection"))
+                {
+                    return ("Fallback.AdminMetrics", true,
+                        $"Total non-voided revenue collected so far this month is ₱{adminSnapshot.MonthlyRevenue:N2}.");
+                }
+
+                if (q.Contains("check-in") || q.Contains("check in") || q.Contains("attendance") || q.Contains("floor") || q.Contains("visit"))
+                {
+                    return ("Fallback.AdminMetrics", true,
+                        $"There have been {adminSnapshot.TodayCheckIns} check-ins today, with {adminSnapshot.CurrentlyOnFloor} {(adminSnapshot.CurrentlyOnFloor == 1 ? "member" : "members")} currently on the gym floor.");
+                }
+
+                if (q.Contains("member") || q.Contains("how many") || q.Contains("count") || q.Contains("active"))
+                {
+                    return ("Fallback.AdminMetrics", true,
+                        $"You currently have {adminSnapshot.TotalMembers} registered members ({adminSnapshot.ActiveMembers} active, {adminSnapshot.InactiveMembers} inactive) and {adminSnapshot.ActiveSubscriptions} active subscriptions.");
+                }
+            }
+
+            // 2. Account-scoped member intents
+            if (q.Contains("expire") || q.Contains("expiry") || q.Contains("subscription") || q.Contains("my plan") || q.Contains("my membership") || q.Contains("days remaining"))
+            {
+                if (!isMember || portal == null)
+                {
+                    return ("Fallback.AuthRequired", false, "Please log in to your Member account so I can check your personal membership status and expiration date.");
+                }
+
+                if (!portal.ExpiryDate.HasValue || string.IsNullOrWhiteSpace(portal.PlanName))
+                {
+                    return ("Fallback.AccountAware", true, "You do not have an active membership plan on file yet. Visit the front desk or check our available plans to get started.");
+                }
+
+                var days = Math.Max(0, portal.DaysRemaining);
+                return ("Fallback.AccountAware", true,
+                    $"Your {portal.PlanName} membership is currently {portal.MembershipStatus} and expires on {portal.ExpiryDate.Value:MMM dd, yyyy} ({days} {(days == 1 ? "day" : "days")} remaining).");
+            }
+
+            if (q.Contains("payment") && (q.Contains("my") || q.Contains("latest") || q.Contains("last") || q.Contains("receipt") || q.Contains("history")))
+            {
+                if (!isMember || portal == null)
+                {
+                    return ("Fallback.AuthRequired", false, "Please log in to your Member account to view your payment history.");
+                }
+
+                var latestPayment = portal.Payments?.FirstOrDefault(p => !p.IsVoided);
+                if (latestPayment == null)
+                {
+                    return ("Fallback.AccountAware", true, "No completed payments were found on your account yet.");
+                }
+
+                var refText = string.IsNullOrWhiteSpace(latestPayment.ReferenceNumber) ? "N/A" : latestPayment.ReferenceNumber;
+                return ("Fallback.AccountAware", true,
+                    $"Your latest recorded payment is ₱{latestPayment.Amount:N2} via {latestPayment.PaymentType} on {latestPayment.PaymentDate:MMM dd, yyyy} (Ref: {refText}).");
+            }
+
+            if (q.Contains("check-in") || q.Contains("check in") || q.Contains("checked in") || q.Contains("visit") || q.Contains("attendance"))
+            {
+                if (!isMember || portal == null)
+                {
+                    return ("Fallback.AuthRequired", false, "Please log in to your Member account to view your gym visit and check-in history.");
+                }
+
+                var count = portal.AttendanceLogs?.Count ?? 0;
+                var latest = portal.AttendanceLogs?.FirstOrDefault();
+                if (count == 0 || latest == null)
+                {
+                    return ("Fallback.AccountAware", true, "You have no recorded gym check-ins yet.");
+                }
+
+                return ("Fallback.AccountAware", true,
+                    $"You have {count} recent {(count == 1 ? "check-in" : "check-ins")} logged. Your latest visit was on {latest.CheckIn:MMM dd, yyyy 'at' h:mm tt} ({latest.DurationDisplay}).");
+            }
+
+            // 3. Facility & public FAQ intents
+            if (q.Contains("hour") || q.Contains("open") || q.Contains("close") || q.Contains("schedule") || q.Contains("time"))
+            {
+                return ("Fallback.Hours", false,
+                    $"Our operating hours are {landingData.OperatingHours}. You can also reach us at {landingData.ContactPhone}.");
+            }
+
+            if (q.Contains("pay") || q.Contains("gcash") || q.Contains("maya") || q.Contains("cash") || q.Contains("card") || q.Contains("bank"))
+            {
+                return ("Fallback.PaymentMethods", false,
+                    "We accept Cash, GCash, Maya, Bank Transfer, and Card. Non-cash payments require a transaction reference number at checkout.");
+            }
+
+            if (q.Contains("renew") || q.Contains("extend"))
+            {
+                return ("Fallback.Renewal", false,
+                    "Early renewals begin the day after your current expiration date so you never lose paid days; expired plans start on the renewal date.");
+            }
+
+            if (q.Contains("plan") || q.Contains("price") || q.Contains("rate") || q.Contains("cost") || q.Contains("fee") || q.Contains("offer"))
+            {
+                return ("Fallback.Plans", false, $"Current membership plans: {plansText}.");
+            }
+
+            return ("Fallback.General", false,
+                $"Current plans: {plansText}. Operating hours: {landingData.OperatingHours}. Contact: {landingData.ContactPhone}.");
+        }
+        
+        public IReadOnlyList<string> GetDefaultSuggestedPrompts(ClaimsPrincipal user)
+        {
+            var isAuthenticated = user?.Identity?.IsAuthenticated == true;
+            if (isAuthenticated && (user!.IsInRole("Admin") || user!.IsInRole("Staff")))
+            {
+                return GetStaffSuggestedPrompts();
+            }
+
+            var isMember = isAuthenticated && user!.IsInRole("Member");
+            return GetDefaultSuggestedPrompts(isMember);
+        }
+
+        private sealed record AdminSnapshot(
+            int TotalMembers,
+            int ActiveMembers,
+            int InactiveMembers,
+            int ActiveSubscriptions,
+            int ExpiringCount,
+            IReadOnlyList<string> ExpiringNames,
+            decimal MonthlyRevenue,
+            int TodayCheckIns,
+            int CurrentlyOnFloor);
     }
 }

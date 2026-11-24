@@ -17,10 +17,10 @@ namespace GymCrudApp.Controllers
         }
 
         [HttpGet]
+        [HttpGet]
         public IActionResult Prompts()
         {
-            var isMember = User.Identity?.IsAuthenticated == true && User.IsInRole("Member");
-            return Ok(new { suggestedPrompts = _chatbotService.GetDefaultSuggestedPrompts(isMember) });
+            return Ok(new { suggestedPrompts = _chatbotService.GetDefaultSuggestedPrompts(User) });
         }
 
         [HttpPost]

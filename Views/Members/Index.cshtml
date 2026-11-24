@@ -59,11 +59,11 @@
                         <td>
                             @if (item.IsActive)
                             {
-                                <span class="fx-badge fx-badge--active">Active</span>
+                                <a asp-action="Delete" asp-route-id="@item.MemberId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Deactivate @item.FullName">Deactivate</a>
                             }
-                            else
+                            else if (User.IsInRole("Admin"))
                             {
-                                <span class="fx-badge fx-badge--neutral">Inactive</span>
+                                <a asp-action="Delete" asp-route-id="@item.MemberId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete @item.FullName">Delete</a>
                             }
                         </td>
                         <td>

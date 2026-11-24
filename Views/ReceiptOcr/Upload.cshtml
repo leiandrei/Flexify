@@ -1,0 +1,54 @@
+@model GymCrudApp.ViewModels.ReceiptOcr.ReceiptUploadViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Scan Receipt (OCR)";
+}
+
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Scan receipt (OCR)</h1>
+        <p class="fx-muted">Upload a GCash, Maya, or bank transfer slip to extract payment fields automatically.</p>
+    </div>
+    <a asp-controller="Payments" asp-action="Index" class="fx-btn fx-btn--ghost">Back to payments</a>
+</header>
+
+<div class="fx-split">
+    <form id="receiptUploadForm" asp-action="Upload" method="post" enctype="multipart/form-data" class="fx-card fx-form fx-split__main">
+        <input type="hidden" asp-for="ClientOcrRawText" id="clientOcrRawText" />
+        <div asp-validation-summary="ModelOnly"></div>
+
+        <div class="fx-field">
+            <label asp-for="ReceiptFile" class="fx-label">Receipt image or PDF</label>
+            <input asp-for="ReceiptFile"
+                   id="receiptFileInput"
+                   type="file"
+                   accept=".jpg,.jpeg,.png,.webp,.pdf,image/*,application/pdf"
+                   class="fx-input" />
+            <span asp-validation-for="ReceiptFile" class="fx-error"></span>
+        </div>
+
+        <p id="ocrStatusText" class="fx-muted" hidden></p>
+
+        <div class="fx-form__actions">
+            <button type="submit" id="extractSubmitBtn" class="fx-btn fx-btn--primary">Extract details</button>
+            <a asp-controller="Payments" asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+        </div>
+    </form>
+
+    <aside class="fx-card fx-split__side" aria-labelledby="ocr-guide-heading">
+        <div class="fx-card__head">
+            <h2 id="ocr-guide-heading">Upload guidelines</h2>
+        </div>
+        <dl class="fx-kv-list">
+            <div class="fx-kv"><dt>Supported files</dt><dd>JPG, PNG, WebP, PDF</dd></div>
+            <div class="fx-kv"><dt>Extracted fields</dt><dd>Amount, Date, Reference #</dd></div>
+            <div class="fx-kv"><dt>Next step</dt><dd>Review &amp; link membership</dd></div>
+        </dl>
+        <p class="fx-muted">Crop tightly around the transaction receipt for best OCR accuracy. PDF uploads skip automatic text scanning and open directly for manual entry.</p>
+    </aside>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+}

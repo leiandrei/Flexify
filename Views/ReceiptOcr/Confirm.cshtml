@@ -1,0 +1,119 @@
+@model GymCrudApp.ViewModels.ReceiptOcr.ReceiptConfirmViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Confirm Receipt Payment";
+    var isPdf = !string.IsNullOrWhiteSpace(Model.ReceiptImagePath) &&
+                Model.ReceiptImagePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+}
+
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Confirm receipt payment</h1>
+        <p class="fx-muted">Review extracted OCR values, link a membership, and record the payment.</p>
+    </div>
+    <a asp-action="Upload" class="fx-btn fx-btn--ghost">Upload another receipt</a>
+</header>
+
+@if (Model.OcrFoundNothing)
+{
+    <div class="fx-alert fx-alert--warn">
+        OCR could not extract payment fields automatically from this file. Enter the payment details manually below.
+    </div>
+}
+else
+{
+    <div class="fx-alert fx-alert--info">
+        OCR extracted @Model.ExtractedFieldCount @(Model.ExtractedFieldCount == 1 ? "field" : "fields"). Verify the values below before saving.
+    </div>
+}
+
+<div class="fx-split">
+    <form asp-action="Confirm" method="post" class="fx-card fx-form fx-split__main">
+        <input type="hidden" asp-for="ReceiptImagePath" />
+        <input type="hidden" asp-for="OcrRawText" />
+        <input type="hidden" asp-for="ExtractedFieldCount" />
+        <input type="hidden" asp-for="OcrFoundNothing" />
+
+        <div asp-validation-summary="ModelOnly"></div>
+
+        <div class="fx-field">
+            <label asp-for="MembershipId" class="fx-label">Member &amp; membership</label>
+            <select asp-for="MembershipId" class="fx-select">
+                <option value="">-- Select membership --</option>
+                @foreach (var option in Model.AvailableMemberships)
+                {
+                    <option value="@option.MembershipId">@option.DisplayLabel</option>
+                }
+            </select>
+            <span asp-validation-for="MembershipId" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="Amount" class="fx-label">Amount (PHP)</label>
+            <input asp-for="Amount" class="fx-input" step="0.01" min="0.01" />
+            <span asp-validation-for="Amount" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="PaymentType" class="fx-label">Payment method</label>
+            <select asp-for="PaymentType" class="fx-select">
+                <option value="GCash">GCash</option>
+                <option value="Maya">Maya</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Card">Card</option>
+                <option value="Cash">Cash</option>
+            </select>
+            <span asp-validation-for="PaymentType" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="ReferenceNumber" class="fx-label">Reference number</label>
+            <input asp-for="ReferenceNumber" class="fx-input" placeholder="Required for non-cash payments" />
+            <span asp-validation-for="ReferenceNumber" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="PaymentDate" class="fx-label">Payment date</label>
+            <input asp-for="PaymentDate" type="date" class="fx-input" />
+            <span asp-validation-for="PaymentDate" class="fx-error"></span>
+        </div>
+
+        <div class="fx-form__actions">
+            <button type="submit" class="fx-btn fx-btn--primary">Confirm &amp; save payment</button>
+            <a asp-action="Upload" class="fx-btn fx-btn--ghost">Re-upload</a>
+        </div>
+    </form>
+
+    <aside class="fx-card fx-split__side" aria-labelledby="receipt-preview-heading">
+        <div class="fx-card__head">
+            <h2 id="receipt-preview-heading">Uploaded receipt</h2>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ReceiptImagePath))
+        {
+            if (isPdf)
+            {
+                <p class="fx-muted">PDF receipt uploaded.</p>
+                <a href="@Model.ReceiptImagePath" target="_blank" rel="noopener" class="fx-btn fx-btn--outline fx-btn--sm">Open PDF in new tab</a>
+            }
+            else
+            {
+                <a href="@Model.ReceiptImagePath" target="_blank" rel="noopener">
+                    <img src="@Model.ReceiptImagePath" alt="Uploaded payment receipt" style="max-width:100%;border-radius:var(--fx-radius);" />
+                </a>
+            }
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.OcrRawText))
+        {
+            <div class="fx-stack fx-stack--sm">
+                <span class="fx-label">Raw OCR text</span>
+                <pre class="fx-muted" style="white-space:pre-wrap;font-size:0.8125rem;max-height:14rem;overflow:auto;">@Model.OcrRawText</pre>
+            </div>
+        }
+    </aside>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

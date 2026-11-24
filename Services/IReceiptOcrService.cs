@@ -8,17 +8,22 @@ namespace GymCrudApp.Services
 {
     public interface IReceiptOcrService
     {
-        (bool IsValid, string? ErrorMessage) ValidateUpload(IFormFile? file);
-        ParsedReceiptCandidates ParseReceiptText(string rawText);
-        Task<(bool Success, string? ErrorMessage, ReceiptConfirmViewModel? Model)> ProcessReceiptUploadAsync(
-            IFormFile file,
+        Task<(bool Success, string? ErrorMessage, ReceiptConfirmViewModel? ConfirmModel)> ProcessReceiptUploadAsync(
+            IFormFile receiptFile,
             CancellationToken cancellationToken = default);
-        Task<ReceiptConfirmViewModel> PrepareConfirmationModelAsync(
+
+        Task<(bool Success, string? ErrorMessage, ReceiptConfirmViewModel? ConfirmModel)> ProcessReceiptUploadAsync(
+            IFormFile receiptFile,
+            string? clientRawText,
+            CancellationToken cancellationToken = default);
+
+        Task PrepareConfirmationModelAsync(
             ReceiptConfirmViewModel model,
             CancellationToken cancellationToken = default);
+
         Task<(bool Success, string? ErrorMessage, int? PaymentId)> ConfirmAndSavePaymentAsync(
             ReceiptConfirmViewModel model,
-            ClaimsPrincipal staffUser,
+            ClaimsPrincipal user,
             CancellationToken cancellationToken = default);
     }
 }

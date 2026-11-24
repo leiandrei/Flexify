@@ -1,0 +1,54 @@
+@model GymCrudApp.ViewModels.MembershipPlans.MembershipPlanFormViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "New Plan";
+}
+
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>New plan</h1>
+        <p class="fx-muted">Create a membership tier, price, and access duration.</p>
+    </div>
+</header>
+
+<form asp-action="Create" method="post" class="fx-card fx-form fx-narrow">
+    <div asp-validation-summary="ModelOnly"></div>
+
+    <div class="fx-field">
+        <label asp-for="PlanName" class="fx-label"></label>
+        <input asp-for="PlanName" class="fx-input" placeholder="e.g. Monthly Unlimited" />
+        <span asp-validation-for="PlanName" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="PlanPrice" class="fx-label"></label>
+        <input asp-for="PlanPrice" class="fx-input" step="0.01" min="0.01" placeholder="1500.00" />
+        <span asp-validation-for="PlanPrice" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="DurationDays" class="fx-label"></label>
+        <input asp-for="DurationDays" class="fx-input" min="1" max="3650" />
+        <span asp-validation-for="DurationDays" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="PlanDescription" class="fx-label"></label>
+        <textarea asp-for="PlanDescription" class="fx-textarea" rows="4" placeholder="Describe included gym access and perks..."></textarea>
+        <span asp-validation-for="PlanDescription" class="fx-error"></span>
+    </div>
+
+    <div class="fx-check">
+        <input asp-for="IsActive" />
+        <label asp-for="IsActive"></label>
+    </div>
+
+    <div class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--primary">Save plan</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

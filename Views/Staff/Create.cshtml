@@ -1,0 +1,55 @@
+@model GymCrudApp.ViewModels.Staff.StaffCreateViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "New Staff";
+}
+
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>New staff</h1>
+        <p class="fx-muted">Create a staff profile and backoffice login account.</p>
+    </div>
+</header>
+
+<form asp-action="Create" method="post" class="fx-card fx-form fx-narrow">
+    <div asp-validation-summary="ModelOnly"></div>
+
+    <div class="fx-field">
+        <label asp-for="FullName" class="fx-label"></label>
+        <input asp-for="FullName" class="fx-input" autocomplete="name" placeholder="Maria Santos" />
+        <span asp-validation-for="FullName" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="Email" class="fx-label"></label>
+        <input asp-for="Email" class="fx-input" autocomplete="email" placeholder="maria.santos@flexify.ph" />
+        <span asp-validation-for="Email" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="Position" class="fx-label"></label>
+        <input asp-for="Position" class="fx-input" placeholder="e.g. Front Desk / Strength Coach" />
+        <span asp-validation-for="Position" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="DateOfBirth" class="fx-label"></label>
+        <input asp-for="DateOfBirth" class="fx-input" />
+        <span asp-validation-for="DateOfBirth" class="fx-error"></span>
+    </div>
+
+    <div class="fx-field">
+        <label asp-for="InitialPassword" class="fx-label"></label>
+        <input asp-for="InitialPassword" class="fx-input" autocomplete="new-password" />
+        <span asp-validation-for="InitialPassword" class="fx-error"></span>
+    </div>
+
+    <div class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--primary">Save staff</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

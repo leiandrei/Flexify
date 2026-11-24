@@ -1,8 +1,45 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home";
+    var signedIn = User.Identity?.IsAuthenticated == true;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="fx-container fx-hero">
+    <span class="fx-eyebrow">Gym membership management</span>
+    <h1 class="fx-hero__title">Run your gym. <em>Fill your gym.</em></h1>
+    <p class="fx-hero__lead">
+        Flexify keeps members, plans, payments and attendance in one place, so owners and staff
+        always know who is active and members can see their own membership anytime.
+    </p>
+    <div class="fx-row">
+        @if (!signedIn)
+        {
+            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Account" asp-action="Register">Become a member</a>
+            <a class="fx-btn fx-btn--outline fx-btn--lg" asp-controller="Account" asp-action="Login">Log in</a>
+        }
+        else if (User.IsInRole("Admin") || User.IsInRole("Staff"))
+        {
+            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Members" asp-action="Index">Go to dashboard</a>
+        }
+        else if (User.IsInRole("Member"))
+        {
+            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="MemberPortal" asp-action="Index">Open my portal</a>
+        }
+    </div>
+</section>
+
+<section class="fx-container" style="padding-bottom:64px" aria-label="Features">
+    <div class="fx-grid-cards">
+        <div class="fx-card fx-feature">
+            <h2>Members</h2>
+            <p>Register members, search by name, email or phone, and keep every profile up to date.</p>
+        </div>
+        <div class="fx-card fx-feature">
+            <h2>Plans &amp; payments</h2>
+            <p>Set up membership plans, record payments, and renew memberships before they expire.</p>
+        </div>
+        <div class="fx-card fx-feature">
+            <h2>Attendance</h2>
+            <p>Check members in and out at the front desk and see who visited on any day.</p>
+        </div>
+    </div>
+</section>

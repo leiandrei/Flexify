@@ -1,0 +1,75 @@
+@{
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var isStaffSide = User.IsInRole("Admin") || User.IsInRole("Staff");
+    var isMember = User.IsInRole("Member");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Flexify</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/GymCrudApp.styles.css" asp-append-version="true" />
+</head>
+<body class="fx">
+<div class="fx-public">
+    <header class="fx-topbar">
+        <div class="fx-container fx-topbar__inner">
+            <a class="fx-brand" asp-controller="Home" asp-action="Index">
+                <partial name="_FxBrand" />
+            </a>
+            <nav class="fx-topnav" aria-label="Site">
+                <a asp-controller="Home" asp-action="Index">Home</a>
+                @if (signedIn)
+                {
+                    <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+                    @if (isStaffSide)
+                    {
+                        <a class="fx-btn fx-btn--outline fx-btn--sm" asp-controller="Members" asp-action="Index">Go to dashboard</a>
+                    }
+                    else if (isMember)
+                    {
+                        <a class="fx-btn fx-btn--outline fx-btn--sm" asp-controller="MemberPortal" asp-action="Index">My portal</a>
+                    }
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit" class="fx-btn fx-btn--ghost fx-btn--sm">Log out</button>
+                    </form>
+                }
+                else
+                {
+                    <a class="fx-btn fx-btn--outline fx-btn--sm" asp-controller="Account" asp-action="Register">Register</a>
+                    <a class="fx-btn fx-btn--primary fx-btn--sm" asp-controller="Account" asp-action="Login">Log in</a>
+                }
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        @if (TempData.Peek("SuccessMessage") != null || TempData.Peek("WarningMessage") != null || TempData.Peek("ErrorMessage") != null)
+        {
+            <div class="fx-container fx-stack fx-stack--sm" style="padding-top:16px">
+                <partial name="_FxAlerts" />
+            </div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="fx-footer">
+        <div class="fx-container fx-footer__inner">
+            <span>&copy; 2026 Flexify</span>
+            <span>Run your gym. Fill your gym.</span>
+        </div>
+    </footer>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

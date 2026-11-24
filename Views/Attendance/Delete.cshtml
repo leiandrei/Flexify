@@ -1,0 +1,27 @@
+﻿@model GymCrudApp.ViewModels.Attendance.AttendanceListItemViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Delete Visit";
+}
+ 
+<header class="fx-page-head">
+    <h1>Delete visit</h1>
+</header>
+ 
+<div class="fx-card fx-narrow">
+    <dl class="fx-kv-list">
+        <div class="fx-kv"><dt>Member</dt><dd>@Model.MemberName</dd></div>
+        <div class="fx-kv"><dt>Check in</dt><dd>@Model.CheckIn.ToString("MMM d, yyyy h:mm tt")</dd></div>
+        <div class="fx-kv"><dt>Check out</dt><dd>@(Model.CheckOut?.ToString("h:mm tt") ?? "Still in gym")</dd></div>
+    </dl>
+ 
+    <div class="fx-alert fx-alert--warn">
+        Are you sure you want to delete this visit by <strong>@Model.MemberName</strong>? This can't be undone.
+    </div>
+ 
+    <form asp-action="Delete" asp-route-id="@Model.AttendanceId" method="post" class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--danger">Confirm delete</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </form>
+</div>
+ 

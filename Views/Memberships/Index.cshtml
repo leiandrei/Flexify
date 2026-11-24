@@ -1,0 +1,58 @@
+﻿@model List<GymCrudApp.ViewModels.Memberships.MembershipListItemViewModel>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Memberships";
+}
+ 
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Memberships</h1>
+        <p class="fx-muted">@Model.Count @(Model.Count == 1 ? "membership" : "memberships")</p>
+    </div>
+    <a asp-action="Create" class="fx-btn fx-btn--primary">+ Assign plan</a>
+</header>
+ 
+<div class="fx-table-wrap">
+    <table class="fx-table">
+        <thead>
+            <tr>
+                <th scope="col">Member</th>
+                <th scope="col">Plan</th>
+                <th scope="col">Dates</th>
+                <th scope="col">Days left</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Any())
+            {
+                <tr><td colspan="6" class="fx-table__empty">No memberships yet. Assign a plan to a member to get started.</td></tr>
+            }
+            else
+            {
+                @foreach (var m in Model)
+                {
+                    <tr>
+                        <td><strong>@m.MemberName</strong></td>
+                        <td>@m.PlanName</td>
+                        <td>
+                            @m.StartDate.ToString("MMM d, yyyy")
+                            <span class="fx-sub">to @m.EndDate.ToString("MMM d, yyyy")</span>
+                        </td>
+                        <td>@(m.DaysRemaining > 0 ? m.DaysRemaining.ToString() : "-")</td>
+                        <td><span class="@FlexifyUi.StatusBadge(m.ComputedStatus)">@m.ComputedStatus</span></td>
+                        <td>
+                            <div class="fx-table__actions">
+                                <a asp-action="Details" asp-route-id="@m.MembershipId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View membership of @m.MemberName">View</a>
+                                <a asp-action="Edit" asp-route-id="@m.MembershipId" class="fx-btn fx-btn--outline fx-btn--sm" aria-label="Edit membership of @m.MemberName">Edit</a>
+                                <a asp-action="Delete" asp-route-id="@m.MembershipId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete membership of @m.MemberName">Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+ 

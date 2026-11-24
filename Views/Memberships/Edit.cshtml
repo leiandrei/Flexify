@@ -1,0 +1,53 @@
+﻿@model GymCrudApp.ViewModels.Memberships.MembershipEditViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Edit Membership";
+}
+ 
+<header class="fx-page-head">
+    <h1>Edit membership</h1>
+</header>
+ 
+<form asp-action="Edit" method="post" class="fx-card fx-form fx-narrow">
+    <input type="hidden" asp-for="MembershipId" />
+    <div asp-validation-summary="ModelOnly"></div>
+ 
+    <div class="fx-field">
+        <label asp-for="MemberId" class="fx-label"></label>
+        <select asp-for="MemberId" asp-items="Model.Members" class="fx-select"></select>
+        <span asp-validation-for="MemberId" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="PlanId" class="fx-label"></label>
+        <select asp-for="PlanId" asp-items="Model.Plans" class="fx-select"></select>
+        <span asp-validation-for="PlanId" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="StartDate" class="fx-label"></label>
+        <input asp-for="StartDate" class="fx-input" />
+        <span asp-validation-for="StartDate" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="EndDate" class="fx-label"></label>
+        <input asp-for="EndDate" class="fx-input" />
+        <span asp-validation-for="EndDate" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-check">
+        <input asp-for="IsActive" />
+        <label asp-for="IsActive"></label>
+    </div>
+ 
+    <div class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--primary">Update membership</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </div>
+</form>
+ 
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+ 

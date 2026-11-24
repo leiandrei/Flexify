@@ -1,0 +1,93 @@
+﻿@model GymCrudApp.ViewModels.Payments.PaymentIndexViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Payments";
+    var hasFilter = !string.IsNullOrWhiteSpace(Model.MemberSearch) || Model.FilterDate.HasValue;
+}
+ 
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Payments</h1>
+        <p class="fx-muted">@Model.Payments.Count @(Model.Payments.Count == 1 ? "payment" : "payments") · @FlexifyUi.Peso(Model.TotalValidAmount) total (voided not counted)</p>
+    </div>
+    <a asp-action="Create" class="fx-btn fx-btn--primary">+ Record payment</a>
+</header>
+ 
+<form asp-action="Index" method="get" class="fx-search-bar" role="search">
+    <div class="fx-field">
+        <label class="fx-label" for="memberSearch">Member</label>
+        <input type="text" id="memberSearch" name="memberSearch" value="@Model.MemberSearch" class="fx-input" placeholder="Name or email" />
+    </div>
+    <div class="fx-field">
+        <label class="fx-label" for="filterDate">Date</label>
+        <input type="date" id="filterDate" name="filterDate" value="@Model.FilterDate?.ToString("yyyy-MM-dd")" class="fx-input" />
+    </div>
+    <button type="submit" class="fx-btn fx-btn--primary">Filter</button>
+    @if (hasFilter)
+    {
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Clear</a>
+    }
+</form>
+ 
+<div class="fx-table-wrap">
+    <table class="fx-table">
+        <thead>
+            <tr>
+                <th scope="col">Member</th>
+                <th scope="col">Date</th>
+                <th scope="col">Method</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Payments.Any())
+            {
+                <tr><td colspan="6" class="fx-table__empty">@(hasFilter ? "No payments match this filter." : "No payments recorded yet.")</td></tr>
+            }
+            else
+            {
+                @foreach (var p in Model.Payments)
+                {
+                    <tr>
+                        <td>
+                            <strong>@p.MemberName</strong>
+                            <span class="fx-sub">@p.PlanName</span>
+                        </td>
+                        <td>@p.PaymentDate.ToString("MMM d, yyyy")</td>
+                        <td>
+                            @p.PaymentType
+                            @if (!string.IsNullOrWhiteSpace(p.ReferenceNumber))
+                            {
+                                <span class="fx-sub">@p.ReferenceNumber</span>
+                            }
+                        </td>
+                        <td>@FlexifyUi.Peso(p.Amount)</td>
+                        <td>
+                            @if (p.IsVoided)
+                            {
+                                <span class="fx-badge fx-badge--overdue">Voided</span>
+                            }
+                            else
+                            {
+                                <span class="fx-badge fx-badge--active">Paid</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="fx-table__actions">
+                                <a asp-action="Details" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View payment by @p.MemberName">View</a>
+                                @if (!p.IsVoided)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--outline fx-btn--sm" aria-label="Edit payment by @p.MemberName">Edit</a>
+                                    <a asp-action="Void" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Void payment by @p.MemberName">Void</a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+ 

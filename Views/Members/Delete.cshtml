@@ -1,15 +1,29 @@
 @model GymCrudApp.ViewModels.Members.MemberDetailsViewModel
 @{
+    Layout = "_AdminLayout";
     ViewData["Title"] = "Deactivate Member";
 }
 
-<div class="alert alert-warning mt-3">
-    <h3>Deactivate Member</h3>
-    <p>Are you sure you want to deactivate <strong>@Model.FullName</strong> (@Model.Email)? Their history will be preserved, but they will no longer be able to log in.</p>
-</div>
+<header class="fx-page-head">
+    <h1>Deactivate member</h1>
+</header>
 
-<form asp-action="Delete" method="post">
-    <input type="hidden" asp-for="MemberId" />
-    <button type="submit" class="btn btn-danger">Confirm Deactivate</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-</form>
+<div class="fx-card fx-narrow">
+    <div class="fx-list-row">
+        <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.FullName)</span>
+        <div class="fx-list-row__body">
+            <strong>@Model.FullName</strong>
+            <span>@Model.Email</span>
+        </div>
+    </div>
+
+    <div class="fx-alert fx-alert--warn">
+        Are you sure you want to deactivate <strong>@Model.FullName</strong> (@Model.Email)? Their history will be preserved, but they will no longer be able to log in.
+    </div>
+
+    <form asp-action="Delete" method="post" class="fx-form__actions">
+        <input type="hidden" asp-for="MemberId" />
+        <button type="submit" class="fx-btn fx-btn--danger">Confirm deactivate</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </form>
+</div>

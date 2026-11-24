@@ -1,0 +1,36 @@
+﻿@model GymCrudApp.ViewModels.Memberships.MembershipDetailsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Membership Details";
+}
+ 
+<header class="fx-page-head">
+    <div class="fx-page-head__title">
+        <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.MemberName)</span>
+        <div class="fx-stack fx-stack--sm" style="gap:4px;min-width:0">
+            <h1>@Model.MemberName</h1>
+            <p class="fx-muted">@Model.MemberEmail</p>
+        </div>
+    </div>
+    <div class="fx-row">
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Back to list</a>
+        <a asp-controller="Payments" asp-action="Create" asp-route-memberId="@Model.MemberId" class="fx-btn fx-btn--outline">Record payment</a>
+        <a asp-action="Edit" asp-route-id="@Model.MembershipId" class="fx-btn fx-btn--primary">Edit membership</a>
+    </div>
+</header>
+ 
+<section class="fx-card fx-narrow" aria-labelledby="membership-heading">
+    <div class="fx-card__head">
+        <h2 id="membership-heading">@Model.PlanName</h2>
+        <span class="@FlexifyUi.StatusBadge(Model.ComputedStatus)">@Model.ComputedStatus</span>
+    </div>
+    <dl class="fx-kv-list">
+        <div class="fx-kv"><dt>Price</dt><dd>@FlexifyUi.Peso(Model.PlanPrice)</dd></div>
+        <div class="fx-kv"><dt>Duration</dt><dd>@Model.DurationDays days</dd></div>
+        <div class="fx-kv"><dt>Start date</dt><dd>@Model.StartDate.ToString("MMM d, yyyy")</dd></div>
+        <div class="fx-kv"><dt>End date</dt><dd>@Model.EndDate.ToString("MMM d, yyyy")</dd></div>
+        <div class="fx-kv"><dt>Days remaining</dt><dd>@(Model.DaysRemaining > 0 ? Model.DaysRemaining.ToString() : "0")</dd></div>
+        <div class="fx-kv"><dt>Last reminder sent</dt><dd>@(Model.LastReminderSent?.ToString("MMM d, yyyy") ?? "Never")</dd></div>
+    </dl>
+</section>
+ 

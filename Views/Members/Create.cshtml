@@ -1,44 +1,53 @@
 @model GymCrudApp.ViewModels.Members.MemberCreateViewModel
 @{
+    Layout = "_AdminLayout";
     ViewData["Title"] = "Create Member";
 }
 
-<h2>Register New Member</h2>
-<form asp-action="Create" method="post" class="col-md-5 mt-3">
-    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Register new member</h1>
+        <p class="fx-muted">The member can log in to their portal with the temporary password.</p>
+    </div>
+</header>
 
-    <div class="mb-3">
-        <label asp-for="FullName" class="form-label"></label>
-        <input asp-for="FullName" class="form-control" />
-        <span asp-validation-for="FullName" class="text-danger"></span>
+<form asp-action="Create" method="post" class="fx-card fx-form fx-narrow">
+    <div asp-validation-summary="ModelOnly"></div>
+
+    <div class="fx-field">
+        <label asp-for="FullName" class="fx-label"></label>
+        <input asp-for="FullName" class="fx-input" />
+        <span asp-validation-for="FullName" class="fx-error"></span>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Email" class="form-label"></label>
-        <input asp-for="Email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
+    <div class="fx-field">
+        <label asp-for="Email" class="fx-label"></label>
+        <input asp-for="Email" class="fx-input" />
+        <span asp-validation-for="Email" class="fx-error"></span>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="ContactNumber" class="form-label"></label>
-        <input asp-for="ContactNumber" class="form-control" placeholder="09171234567" />
-        <span asp-validation-for="ContactNumber" class="text-danger"></span>
+    <div class="fx-field">
+        <label asp-for="ContactNumber" class="fx-label"></label>
+        <input asp-for="ContactNumber" class="fx-input" placeholder="09171234567" />
+        <span asp-validation-for="ContactNumber" class="fx-error"></span>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Birthdate" class="form-label"></label>
-        <input asp-for="Birthdate" class="form-control" />
-        <span asp-validation-for="Birthdate" class="text-danger"></span>
+    <div class="fx-field">
+        <label asp-for="Birthdate" class="fx-label"></label>
+        <input asp-for="Birthdate" class="fx-input" />
+        <span asp-validation-for="Birthdate" class="fx-error"></span>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="InitialPassword" class="form-label"></label>
-        <input asp-for="InitialPassword" class="form-control" />
-        <span asp-validation-for="InitialPassword" class="text-danger"></span>
+    <div class="fx-field">
+        <label asp-for="InitialPassword" class="fx-label"></label>
+        <input asp-for="InitialPassword" class="fx-input" />
+        <span asp-validation-for="InitialPassword" class="fx-error"></span>
     </div>
 
-    <button type="submit" class="btn btn-primary">Save Member</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    <div class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--primary">Save member</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </div>
 </form>
 
 @section Scripts {

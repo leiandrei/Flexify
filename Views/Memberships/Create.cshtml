@@ -1,0 +1,48 @@
+﻿@model GymCrudApp.ViewModels.Memberships.MembershipCreateViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Assign Plan";
+}
+ 
+<header class="fx-page-head">
+    <div class="fx-stack fx-stack--sm">
+        <h1>Assign a plan</h1>
+        <p class="fx-muted">The end date is calculated from the plan's duration.</p>
+    </div>
+</header>
+ 
+<form asp-action="Create" method="post" class="fx-card fx-form fx-narrow">
+    <div asp-validation-summary="ModelOnly"></div>
+ 
+    <div class="fx-field">
+        <label asp-for="MemberId" class="fx-label"></label>
+        <select asp-for="MemberId" asp-items="Model.Members" class="fx-select">
+            <option value="">Choose a member</option>
+        </select>
+        <span asp-validation-for="MemberId" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="PlanId" class="fx-label"></label>
+        <select asp-for="PlanId" asp-items="Model.Plans" class="fx-select">
+            <option value="">Choose a plan</option>
+        </select>
+        <span asp-validation-for="PlanId" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-field">
+        <label asp-for="StartDate" class="fx-label"></label>
+        <input asp-for="StartDate" class="fx-input" />
+        <span asp-validation-for="StartDate" class="fx-error"></span>
+    </div>
+ 
+    <div class="fx-form__actions">
+        <button type="submit" class="fx-btn fx-btn--primary">Assign plan</button>
+        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+    </div>
+</form>
+ 
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+ 

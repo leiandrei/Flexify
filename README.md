@@ -1,6 +1,7 @@
 # Flexify
 
 > A role-based gym management platform built with ASP.NET Core MVC, Entity Framework Core, and SQL Server — featuring membership lifecycle management, atomic payments and renewals, a member self-service portal, an analytics dashboard, and an AI front-desk assistant powered by Google Gemini.
+> 
 ![ASP.NET Core MVC](https://img.shields.io/badge/ASP.NET%20Core-MVC-512BD4?logo=dotnet&logoColor=white)
 ![EF Core](https://img.shields.io/badge/EF%20Core-Code--First-512BD4)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?logo=microsoftsqlserver&logoColor=white)

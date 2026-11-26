@@ -1,36 +1,200 @@
 ﻿@model GymCrudApp.ViewModels.Memberships.MembershipDetailsViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Membership Details";
+    ViewData["Title"] = $"{Model.PlanName} · {Model.MemberName}";
+    var statusPill = Model.ComputedStatus switch
+    {
+        "Active" => "is-active",
+        "Expiring" => "is-expiring",
+        "Expired" => "is-expired",
+        _ => "is-inactive"
+    };
+    var accountPill = Model.MemberIsActive ? "is-active" : "is-inactive";
 }
- 
-<header class="fx-page-head">
-    <div class="fx-page-head__title">
-        <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.MemberName)</span>
-        <div class="fx-stack fx-stack--sm" style="gap:4px;min-width:0">
-            <h1>@Model.MemberName</h1>
-            <p class="fx-muted">@Model.MemberEmail</p>
+
+<div class="fx-min fx-member-detail fx-membership-detail">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Memberships</a>
+        <span aria-hidden="true"> / </span>
+        <span>@Model.MemberName · @Model.PlanName</span>
+    </nav>
+
+    <header class="fx-page-head">
+        <div>
+            <h1>@Model.PlanName</h1>
+            <p class="fx-muted">
+                <a asp-controller="Members" asp-action="Details" asp-route-id="@Model.MemberId" class="fx-membership-detail__member">@Model.MemberName</a>
+                · @Model.StartDate.ToString("MMM d") → @Model.EndDate.ToString("MMM d, yyyy")
+            </p>
         </div>
+        <div class="fx-page-head__actions">
+            <a asp-action="Delete" asp-route-id="@Model.MembershipId" class="fx-btn fx-btn--danger-outline">End membership</a>
+            <a asp-action="Edit" asp-route-id="@Model.MembershipId" class="fx-btn fx-btn--ghost">Edit</a>
+            <a asp-controller="Renewals" asp-action="Renew" asp-route-id="@Model.MemberId" class="fx-btn fx-btn--primary">Renew @Model.PlanName</a>
+        </div>
+    </header>
+
+    @if (Model.ComputedStatus == "Expiring")
+    {
+        var nextStart = Model.EndDate.Date.AddDays(1);
+        var daysWord = Model.DaysRemaining == 1 ? "day" : "days";
+        <div class="fx-alert fx-alert--warn" role="status">
+            Ends in @Model.DaysRemaining @daysWord (@Model.EndDate.ToString("MMM d, yyyy")).
+            @if (Model.DurationDays > 0)
+            {
+                <text>Renewing now starts the next @Model.DurationDays days on @nextStart.ToString("MMM d").</text>
+            }
+        </div>
+    }
+    else if (Model.ComputedStatus == "Expired")
+    {
+        <div class="fx-alert fx-alert--danger" role="status">
+            Ended on @Model.EndDate.ToString("MMM d, yyyy"). Renew to restore access.
+        </div>
+    }
+
+    <div class="fx-member-detail__split">
+        <section aria-labelledby="sub-h">
+            <h2 id="sub-h">Membership</h2>
+            <dl class="fx-dl">
+                <dt>Plan</dt><dd>@Model.PlanName · @FlexifyUi.Peso(Model.PlanPrice)</dd>
+                <dt>Duration</dt><dd>@Model.DurationDays days</dd>
+                <dt>Started</dt><dd>@Model.StartDate.ToString("MMM d, yyyy")</dd>
+                <dt>Ends</dt><dd>@Model.EndDate.ToString("MMM d, yyyy")</dd>
+                <dt>Status</dt>
+                <dd><span class="fx-members__pill @statusPill">@Model.ComputedStatus</span></dd>
+                <dt>Days remaining</dt>
+                <dd>
+                    @if (Model.DurationDays > 0)
+                    {
+                        <b>@Model.DaysRemaining</b><text> of @Model.DurationDays</text>
+                    }
+                    else
+                    {
+                        @Model.DaysRemaining
+                    }
+                </dd>
+                <dt>Last reminder</dt>
+                <dd>@(Model.LastReminderSent?.ToString("MMM d, yyyy") ?? "Never")</dd>
+            </dl>
+        </section>
+
+        <section aria-labelledby="mem-h">
+            <h2 id="mem-h">Member</h2>
+            <dl class="fx-dl">
+                <dt>Name</dt>
+                <dd><a asp-controller="Members" asp-action="Details" asp-route-id="@Model.MemberId">@Model.MemberName</a></dd>
+                <dt>Email</dt><dd>@Model.MemberEmail</dd>
+                <dt>Contact</dt>
+                <dd>@(string.IsNullOrWhiteSpace(Model.MemberContactNumber) ? "—" : Model.MemberContactNumber)</dd>
+                <dt>Account</dt>
+                <dd><span class="fx-members__pill @accountPill">@(Model.MemberIsActive ? "Active" : "Inactive")</span></dd>
+                <dt>Joined</dt>
+                <dd>@(Model.MemberJoinDate == default ? "—" : Model.MemberJoinDate.ToString("MMM d, yyyy"))</dd>
+            </dl>
+        </section>
     </div>
-    <div class="fx-row">
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Back to list</a>
-        <a asp-controller="Payments" asp-action="Create" asp-route-memberId="@Model.MemberId" class="fx-btn fx-btn--outline">Record payment</a>
-        <a asp-action="Edit" asp-route-id="@Model.MembershipId" class="fx-btn fx-btn--primary">Edit membership</a>
-    </div>
-</header>
- 
-<section class="fx-card fx-narrow" aria-labelledby="membership-heading">
-    <div class="fx-card__head">
-        <h2 id="membership-heading">@Model.PlanName</h2>
-        <span class="@FlexifyUi.StatusBadge(Model.ComputedStatus)">@Model.ComputedStatus</span>
-    </div>
-    <dl class="fx-kv-list">
-        <div class="fx-kv"><dt>Price</dt><dd>@FlexifyUi.Peso(Model.PlanPrice)</dd></div>
-        <div class="fx-kv"><dt>Duration</dt><dd>@Model.DurationDays days</dd></div>
-        <div class="fx-kv"><dt>Start date</dt><dd>@Model.StartDate.ToString("MMM d, yyyy")</dd></div>
-        <div class="fx-kv"><dt>End date</dt><dd>@Model.EndDate.ToString("MMM d, yyyy")</dd></div>
-        <div class="fx-kv"><dt>Days remaining</dt><dd>@(Model.DaysRemaining > 0 ? Model.DaysRemaining.ToString() : "0")</dd></div>
-        <div class="fx-kv"><dt>Last reminder sent</dt><dd>@(Model.LastReminderSent?.ToString("MMM d, yyyy") ?? "Never")</dd></div>
-    </dl>
-</section>
- 
+
+    <section class="fx-section" aria-labelledby="pay-h">
+        <div class="fx-section__head">
+            <h2 id="pay-h">Payments for this membership</h2>
+            <a asp-controller="Payments" asp-action="Index" asp-route-memberSearch="@Model.MemberName">All payments</a>
+        </div>
+        <div class="fx-table-wrap">
+            <table class="fx-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Method</th>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Recorded by</th>
+                        <th scope="col" class="fx-num">Amount</th>
+                        <th scope="col" class="fx-th-actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Payments.Any())
+                    {
+                        <tr><td colspan="6" class="fx-table__empty">No payments linked to this membership yet.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var p in Model.Payments)
+                        {
+                            <tr class="@(p.IsVoided ? "is-void" : null)">
+                                <td>@p.PaymentDate.ToString("MMM d, yyyy")</td>
+                                <td>@p.PaymentType</td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(p.ReferenceNumber))
+                                    {
+                                        <span class="fx-muted">—</span>
+                                    }
+                                    else
+                                    {
+                                        @p.ReferenceNumber
+                                    }
+                                </td>
+                                <td>@p.RecordedByStaffName</td>
+                                <td class="fx-num">@FlexifyUi.Peso(p.Amount)</td>
+                                <td>
+                                    <div class="fx-table__actions">
+                                        @if (p.IsVoided)
+                                        {
+                                            <span class="fx-members__pill is-inactive">Voided</span>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Payments" asp-action="Void" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--ghost fx-btn--sm">Void</a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="fx-section" aria-labelledby="vis-h">
+        <div class="fx-section__head">
+            <h2 id="vis-h">Visits in this period</h2>
+            <a asp-controller="Attendance" asp-action="Index">Attendance</a>
+        </div>
+        <div class="fx-table-wrap">
+            <table class="fx-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Checked in</th>
+                        <th scope="col">Checked out</th>
+                        <th scope="col" class="fx-num">Time spent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Visits.Any())
+                    {
+                        <tr><td colspan="4" class="fx-table__empty">No visits during this membership period.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var v in Model.Visits)
+                        {
+                            var dateLabel = v.CheckIn.Date == DateTime.Today
+                                ? "Today"
+                                : v.CheckIn.Date == DateTime.Today.AddDays(-1)
+                                    ? "Yesterday"
+                                    : v.CheckIn.ToString("MMM d");
+                            <tr>
+                                <td>@dateLabel</td>
+                                <td>@v.CheckIn.ToString("h:mm tt")</td>
+                                <td>@(v.CheckOut.HasValue ? v.CheckOut.Value.ToString("h:mm tt") : "—")</td>
+                                <td class="fx-num">@v.TimeSpentLabel</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>

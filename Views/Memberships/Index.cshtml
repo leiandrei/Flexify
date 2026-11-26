@@ -2,57 +2,150 @@
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Memberships";
+    var activeCount = Model.Count(m => m.ComputedStatus is "Active" or "Expiring");
 }
- 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Memberships</h1>
-        <p class="fx-muted">@Model.Count @(Model.Count == 1 ? "membership" : "memberships")</p>
-    </div>
-    <a asp-action="Create" class="fx-btn fx-btn--primary">+ Assign plan</a>
-</header>
- 
-<div class="fx-table-wrap">
-    <table class="fx-table">
-        <thead>
-            <tr>
-                <th scope="col">Member</th>
-                <th scope="col">Plan</th>
-                <th scope="col">Dates</th>
-                <th scope="col">Days left</th>
-                <th scope="col">Status</th>
-                <th scope="col"><span class="visually-hidden">Actions</span></th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (!Model.Any())
-            {
-                <tr><td colspan="6" class="fx-table__empty">No memberships yet. Assign a plan to a member to get started.</td></tr>
-            }
-            else
-            {
-                @foreach (var m in Model)
+
+@* Members-prototype layout; contact/email come from seeded Member rows already loaded *@
+<div class="fx-members fx-memberships">
+    <header class="fx-members__head">
+        <div>
+            <h1>Memberships</h1>
+            <p class="fx-muted">
+                <span id="membershipsCountLabel">@Model.Count @(Model.Count == 1 ? "membership" : "memberships") · @activeCount active</span>
+            </p>
+        </div>
+        <a asp-action="Create" class="fx-btn fx-btn--primary">Assign a plan</a>
+    </header>
+
+    <form class="fx-members__search fx-memberships__toolbar" role="search" onsubmit="return false">
+        <label class="visually-hidden" for="membershipsSearch">Search memberships</label>
+        <div class="fx-members__search-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input type="search" id="membershipsSearch" class="fx-input" placeholder="Search by name, email or phone" autocomplete="off" />
+        </div>
+        <label class="visually-hidden" for="membershipsStatus">Status</label>
+        <select id="membershipsStatus" class="fx-select fx-memberships__select" aria-label="Status">
+            <option value="">All statuses</option>
+            <option value="Active">Active</option>
+            <option value="Expiring">Expiring</option>
+            <option value="Expired">Expired</option>
+            <option value="Inactive">Inactive</option>
+        </select>
+    </form>
+
+    <div class="fx-members__table-wrap">
+        <table class="fx-members__table">
+            <thead>
+                <tr>
+                    <th scope="col">Member</th>
+                    <th scope="col">Contact</th>
+                    <th scope="col">Plan</th>
+                    <th scope="col">Joined</th>
+                    <th scope="col">Ends</th>
+                    <th scope="col">Days left</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="fx-th-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="membershipsTableBody">
+                @if (!Model.Any())
                 {
-                    <tr>
-                        <td><strong>@m.MemberName</strong></td>
-                        <td>@m.PlanName</td>
-                        <td>
-                            @m.StartDate.ToString("MMM d, yyyy")
-                            <span class="fx-sub">to @m.EndDate.ToString("MMM d, yyyy")</span>
-                        </td>
-                        <td>@(m.DaysRemaining > 0 ? m.DaysRemaining.ToString() : "-")</td>
-                        <td><span class="@FlexifyUi.StatusBadge(m.ComputedStatus)">@m.ComputedStatus</span></td>
-                        <td>
-                            <div class="fx-table__actions">
-                                <a asp-action="Details" asp-route-id="@m.MembershipId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View membership of @m.MemberName">View</a>
-                                <a asp-action="Edit" asp-route-id="@m.MembershipId" class="fx-btn fx-btn--outline fx-btn--sm" aria-label="Edit membership of @m.MemberName">Edit</a>
-                                <a asp-action="Delete" asp-route-id="@m.MembershipId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete membership of @m.MemberName">Delete</a>
-                            </div>
-                        </td>
-                    </tr>
+                    <tr data-empty-all="true"><td colspan="8" class="fx-members__empty">No memberships yet. Assign a plan to a member to get started.</td></tr>
                 }
-            }
-        </tbody>
-    </table>
+                else
+                {
+                    @foreach (var m in Model)
+                    {
+                        var pillClass = m.ComputedStatus switch
+                        {
+                            "Active" => "is-active",
+                            "Expiring" => "is-expiring",
+                            "Expired" => "is-expired",
+                            _ => "is-inactive"
+                        };
+                        var daysLabel = m.ComputedStatus == "Expired" ? "Ended" : m.DaysRemaining.ToString();
+                        var phone = string.IsNullOrWhiteSpace(m.ContactNumber) ? "—" : m.ContactNumber;
+                        <tr data-name="@m.MemberName"
+                            data-email="@m.MemberEmail"
+                            data-phone="@m.ContactNumber"
+                            data-plan="@m.PlanName"
+                            data-status="@m.ComputedStatus">
+                            <td>
+                                <div class="fx-list-row">
+                                    <span class="fx-avatar" aria-hidden="true">@FlexifyUi.Initials(m.MemberName)</span>
+                                    <div class="fx-list-row__body">
+                                        <strong>@m.MemberName</strong>
+                                        <span>@m.MemberEmail</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@phone</td>
+                            <td>@m.PlanName</td>
+                            <td>@m.StartDate.ToString("MMM d, yyyy")</td>
+                            <td>@m.EndDate.ToString("MMM d, yyyy")</td>
+                            <td>@daysLabel</td>
+                            <td><span class="fx-members__pill @pillClass">@m.ComputedStatus</span></td>
+                            <td>
+                                <div class="fx-members__actions">
+                                    @if (m.ComputedStatus is "Expiring" or "Expired")
+                                    {
+                                        <a asp-controller="Renewals" asp-action="Renew" asp-route-id="@m.MemberId" class="fx-btn fx-btn--primary fx-btn--sm" aria-label="Renew @m.MemberName">Renew</a>
+                                    }
+                                    <a asp-action="Details" asp-route-id="@m.MembershipId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View membership of @m.MemberName">View</a>
+                                    <a asp-action="Edit" asp-route-id="@m.MembershipId" class="fx-btn fx-btn--ghost fx-btn--sm fx-memberships__edit" aria-label="Edit membership of @m.MemberName">Edit</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    <tr id="membershipsEmptyFilter" hidden><td colspan="8" class="fx-members__empty">No memberships match this filter.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
- 
+
+@section Scripts {
+<script>
+(() => {
+  const search = document.getElementById('membershipsSearch');
+  const status = document.getElementById('membershipsStatus');
+  const body = document.getElementById('membershipsTableBody');
+  const emptyRow = document.getElementById('membershipsEmptyFilter');
+  const countLabel = document.getElementById('membershipsCountLabel');
+  if (!search || !status || !body) return;
+
+  const rows = [...body.querySelectorAll('tr[data-status]')];
+
+  const apply = () => {
+    const q = (search.value || '').trim().toLowerCase();
+    const st = status.value;
+    let shown = 0;
+    let active = 0;
+    for (const row of rows) {
+      const hay = [
+        row.dataset.name,
+        row.dataset.email,
+        row.dataset.phone,
+        row.dataset.plan
+      ].join(' ').toLowerCase();
+      const rowStatus = row.dataset.status || '';
+      const matchQ = !q || hay.includes(q);
+      const matchS = !st || rowStatus === st;
+      const visible = matchQ && matchS;
+      row.hidden = !visible;
+      if (visible) {
+        shown++;
+        if (rowStatus === 'Active' || rowStatus === 'Expiring') active++;
+      }
+    }
+    if (emptyRow) emptyRow.hidden = shown !== 0 || rows.length === 0;
+    if (countLabel) {
+      countLabel.textContent = `${shown} membership${shown === 1 ? '' : 's'} · ${active} active`;
+    }
+  };
+
+  search.addEventListener('input', apply);
+  status.addEventListener('change', apply);
+})();
+</script>
+}

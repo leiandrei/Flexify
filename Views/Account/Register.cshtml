@@ -25,7 +25,6 @@
             <label asp-for="Email" class="fx-label">Email</label>
             <input asp-for="Email" class="fx-input" type="email" autocomplete="email" placeholder="you@email.com" />
             <span asp-validation-for="Email" class="fx-error"></span>
-            <span class="fx-hint">Any valid email works.</span>
         </div>
 
         <div class="fx-field">
@@ -45,7 +44,17 @@
             <label asp-for="Password" class="fx-label">Password</label>
             <div class="fx-password">
                 <input asp-for="Password" class="fx-input" autocomplete="new-password" data-password-input />
-                <button type="button" class="fx-password__toggle" data-password-toggle aria-label="Show password">Show</button>
+                <button type="button" class="fx-password__toggle" data-password-toggle aria-label="Show password" aria-pressed="false">
+                    <svg class="fx-password__icon fx-password__icon--show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg class="fx-password__icon fx-password__icon--hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="m4 4 16 16" />
+                    </svg>
+                </button>
             </div>
             <span asp-validation-for="Password" class="fx-error"></span>
             <span class="fx-hint">At least 8 characters, with a letter and a number.</span>
@@ -55,7 +64,17 @@
             <label asp-for="ConfirmPassword" class="fx-label">Confirm password</label>
             <div class="fx-password">
                 <input asp-for="ConfirmPassword" class="fx-input" autocomplete="new-password" data-password-input />
-                <button type="button" class="fx-password__toggle" data-password-toggle aria-label="Show password">Show</button>
+                <button type="button" class="fx-password__toggle" data-password-toggle aria-label="Show password" aria-pressed="false">
+                    <svg class="fx-password__icon fx-password__icon--show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg class="fx-password__icon fx-password__icon--hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="m4 4 16 16" />
+                    </svg>
+                </button>
             </div>
             <span asp-validation-for="ConfirmPassword" class="fx-error"></span>
         </div>
@@ -78,8 +97,12 @@
           if (!input) return;
           const show = input.type === 'password';
           input.type = show ? 'text' : 'password';
-          btn.textContent = show ? 'Hide' : 'Show';
           btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+          btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+          const eye = btn.querySelector('.fx-password__icon--show');
+          const eyeOff = btn.querySelector('.fx-password__icon--hide');
+          if (eye) eye.hidden = show;
+          if (eyeOff) eyeOff.hidden = !show;
         });
       });
     })();

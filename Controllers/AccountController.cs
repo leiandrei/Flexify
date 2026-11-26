@@ -70,7 +70,22 @@ namespace GymCrudApp.Controllers
             {
                 foreach (var error in createResult.Errors)
                 {
-                    ModelState.AddModelError(string.Empty, error.Description);
+                    var key = error.Code switch
+                    {
+                        "PasswordTooShort"
+                            or "PasswordRequiresDigit"
+                            or "PasswordRequiresLower"
+                            or "PasswordRequiresUpper"
+                            or "PasswordRequiresNonAlphanumeric"
+                            or "PasswordRequiresUniqueChars"
+                            or "PasswordMismatch" => nameof(model.Password),
+                        "DuplicateUserName"
+                            or "DuplicateEmail"
+                            or "InvalidEmail"
+                            or "InvalidUserName" => nameof(model.Email),
+                        _ => string.Empty
+                    };
+                    ModelState.AddModelError(key, error.Description);
                 }
                 return View(model);
             }

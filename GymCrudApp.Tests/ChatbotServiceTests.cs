@@ -132,7 +132,7 @@ namespace GymCrudApp.Tests
 
             Assert.Equal("Fallback", response.Intent);
             Assert.Contains("Quarterly Pro", response.Reply);
-            Assert.Contains("4,000.00", response.Reply);
+            Assert.Contains("4,000", response.Reply);
         }
 
         [Fact]

@@ -1,54 +1,63 @@
 @model GymCrudApp.ViewModels.Members.MemberCreateViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Create Member";
+    ViewData["Title"] = "Register member";
 }
 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Register new member</h1>
-        <p class="fx-muted">The member can log in to their portal with the temporary password.</p>
-    </div>
-</header>
+<div class="fx-min fx-edit-page">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Members</a>
+        <span aria-hidden="true"> / </span>
+        <span>Register member</span>
+    </nav>
+    <header class="fx-page-head">
+        <div>
+            <h1>Register member</h1>
+            <p class="fx-muted">Creates their login too. Sell a plan from their page after saving.</p>
+        </div>
+    </header>
 
-<form asp-action="Create" method="post" class="fx-card fx-form fx-narrow">
-    <div asp-validation-summary="ModelOnly"></div>
+    <form asp-action="Create" method="post" class="fx-form fx-form--wide">
+        <div asp-validation-summary="ModelOnly" class="fx-field--full"></div>
 
-    <div class="fx-field">
-        <label asp-for="FullName" class="fx-label"></label>
-        <input asp-for="FullName" class="fx-input" />
-        <span asp-validation-for="FullName" class="fx-error"></span>
-    </div>
+        <div class="fx-field fx-field--full">
+            <label asp-for="FullName" class="fx-label">Full name</label>
+            <input asp-for="FullName" class="fx-input" autocomplete="name" />
+            <span asp-validation-for="FullName" class="fx-error"></span>
+        </div>
 
-    <div class="fx-field">
-        <label asp-for="Email" class="fx-label"></label>
-        <input asp-for="Email" class="fx-input" />
-        <span asp-validation-for="Email" class="fx-error"></span>
-    </div>
+        <div class="fx-field">
+            <label asp-for="Email" class="fx-label">Email</label>
+            <input asp-for="Email" class="fx-input" type="email" autocomplete="email" />
+            <span class="fx-hint">Used to log in to the member portal.</span>
+            <span asp-validation-for="Email" class="fx-error"></span>
+        </div>
 
-    <div class="fx-field">
-        <label asp-for="ContactNumber" class="fx-label"></label>
-        <input asp-for="ContactNumber" class="fx-input" placeholder="09171234567" />
-        <span asp-validation-for="ContactNumber" class="fx-error"></span>
-    </div>
+        <div class="fx-field">
+            <label asp-for="ContactNumber" class="fx-label">Contact number</label>
+            <input asp-for="ContactNumber" class="fx-input" type="tel" placeholder="0917 123 4567" autocomplete="tel" />
+            <span asp-validation-for="ContactNumber" class="fx-error"></span>
+        </div>
 
-    <div class="fx-field">
-        <label asp-for="Birthdate" class="fx-label"></label>
-        <input asp-for="Birthdate" class="fx-input" />
-        <span asp-validation-for="Birthdate" class="fx-error"></span>
-    </div>
+        <div class="fx-field">
+            <label asp-for="Birthdate" class="fx-label">Birthdate</label>
+            <input asp-for="Birthdate" class="fx-input" type="date" />
+            <span asp-validation-for="Birthdate" class="fx-error"></span>
+        </div>
 
-    <div class="fx-field">
-        <label asp-for="InitialPassword" class="fx-label"></label>
-        <input asp-for="InitialPassword" class="fx-input" />
-        <span asp-validation-for="InitialPassword" class="fx-error"></span>
-    </div>
+        <div class="fx-field">
+            <label asp-for="InitialPassword" class="fx-label">Initial password</label>
+            <input asp-for="InitialPassword" class="fx-input" autocomplete="new-password" />
+            <span class="fx-hint">The member changes it after first login.</span>
+            <span asp-validation-for="InitialPassword" class="fx-error"></span>
+        </div>
 
-    <div class="fx-form__actions">
-        <button type="submit" class="fx-btn fx-btn--primary">Save member</button>
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-    </div>
-</form>
+        <div class="fx-form__actions fx-field--full">
+            <button type="submit" class="fx-btn fx-btn--primary">Save member</button>
+            <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

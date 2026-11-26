@@ -2,112 +2,212 @@
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Members";
+    var activeOnPage = Model.Members.Count(m => m.MembershipStatus is "Active" or "Expiring");
 }
 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Members</h1>
-        <p class="fx-muted">@Model.TotalCount @(Model.TotalCount == 1 ? "member" : "members")</p>
-    </div>
-    <a asp-action="Create" class="fx-btn fx-btn--primary">+ Register new member</a>
-</header>
+<div class="fx-members">
+    <header class="fx-members__head">
+        <div>
+            <h1>Members</h1>
+            <p class="fx-muted">@Model.TotalCount @(Model.TotalCount == 1 ? "member" : "members") · @activeOnPage active on this page</p>
+        </div>
+        <a asp-action="Create" class="fx-btn fx-btn--primary">Register member</a>
+    </header>
 
-<form asp-action="Index" method="get" class="fx-search-bar" role="search">
-    <div class="fx-field">
-        <label class="fx-label" for="searchTerm">Search members</label>
-        <input type="text" id="searchTerm" name="searchTerm" value="@Model.SearchTerm" class="fx-input" placeholder="Name, email, or phone" />
-    </div>
-    <button type="submit" class="fx-btn fx-btn--primary">Search</button>
-    @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
-    {
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Clear</a>
-    }
-</form>
-
-<div class="fx-table-wrap">
-    <table class="fx-table">
-        <thead>
-            <tr>
-                <th scope="col">Member</th>
-                <th scope="col">Contact</th>
-                <th scope="col">Join date</th>
-                <th scope="col">Status</th>
-                <th scope="col"><span class="visually-hidden">Actions</span></th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (!Model.Members.Any())
+    <form asp-action="Index" method="get" id="membersFilterForm" class="fx-members__search fx-memberships__toolbar" role="search">
+        <label class="visually-hidden" for="searchTerm">Search members</label>
+        <div class="fx-members__search-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input type="search"
+                   id="searchTerm"
+                   name="searchTerm"
+                   value="@Model.SearchTerm"
+                   class="fx-input"
+                   placeholder="Search by name, email or phone"
+                   autocomplete="off" />
+        </div>
+        <label class="visually-hidden" for="status">Status</label>
+        <select id="status" name="status" class="fx-select fx-memberships__select" aria-label="Status">
+            <option value="">All statuses</option>
+            @foreach (var s in new[] { "Active", "Expiring", "Expired", "No plan", "Inactive" })
             {
-                <tr><td colspan="5" class="fx-table__empty">No members found.</td></tr>
+                if (Model.Status == s)
+                {
+                    <option value="@s" selected="selected">@s</option>
+                }
+                else
+                {
+                    <option value="@s">@s</option>
+                }
+            }
+        </select>
+        <label class="visually-hidden" for="plan">Plan</label>
+        <select id="plan" name="plan" class="fx-select fx-memberships__select" aria-label="Plan">
+            <option value="">All plans</option>
+            @if (Model.Plan == "No plan")
+            {
+                <option value="No plan" selected="selected">No plan</option>
             }
             else
             {
-                @foreach (var item in Model.Members)
+                <option value="No plan">No plan</option>
+            }
+            @foreach (var p in Model.PlanChoices)
+            {
+                if (p.Selected)
                 {
-                    <tr>
-                        <td>
-                            <div class="fx-list-row">
-                                <span class="fx-avatar @(item.IsActive ? "" : "fx-avatar--neutral")" aria-hidden="true">@FlexifyUi.Initials(item.FullName)</span>
-                                <div class="fx-list-row__body">
-                                    <strong>@item.FullName</strong>
-                                    <span>@item.Email</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>@item.ContactNumber</td>
-                        <td>@item.JoinDate.ToString("MMM d, yyyy")</td>
-                        <td>
-                            @if (item.IsActive)
-                            {
-                                <a asp-action="Delete" asp-route-id="@item.MemberId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Deactivate @item.FullName">Deactivate</a>
-                            }
-                            else if (User.IsInRole("Admin"))
-                            {
-                                <a asp-action="Delete" asp-route-id="@item.MemberId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete @item.FullName">Delete</a>
-                            }
-                        </td>
-                        <td>
-                            <div class="fx-table__actions">
-                                <a asp-action="Details" asp-route-id="@item.MemberId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View @item.FullName">View</a>
-                                <a asp-action="Edit" asp-route-id="@item.MemberId" class="fx-btn fx-btn--outline fx-btn--sm" aria-label="Edit @item.FullName">Edit</a>
-                                @if (item.IsActive)
-                                {
-                                    <a asp-action="Delete" asp-route-id="@item.MemberId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Deactivate @item.FullName">Deactivate</a>
-                                }
-                            </div>
-                        </td>
-                    </tr>
+                    <option value="@p.Value" selected="selected">@p.Text</option>
+                }
+                else
+                {
+                    <option value="@p.Value">@p.Text</option>
                 }
             }
-        </tbody>
-    </table>
+        </select>
+        @if (Model.HasFilters)
+        {
+            <a asp-action="Index" class="fx-btn fx-btn--ghost">Clear</a>
+        }
+    </form>
+
+    <div class="fx-members__table-wrap">
+        <table class="fx-members__table">
+            <thead>
+                <tr>
+                    <th scope="col">Member</th>
+                    <th scope="col">Contact</th>
+                    <th scope="col">Joined</th>
+                    <th scope="col">Plan</th>
+                    <th scope="col">Ends</th>
+                    <th scope="col">Days left</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="fx-th-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Members.Any())
+                {
+                    <tr><td colspan="8" class="fx-members__empty">@(Model.HasFilters ? "No members match this filter." : "No members found.")</td></tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Members)
+                    {
+                        var pillClass = item.MembershipStatus switch
+                        {
+                            "Active" => "is-active",
+                            "Expiring" => "is-expiring",
+                            "Expired" => "is-expired",
+                            _ => "is-inactive"
+                        };
+                        var daysLabel = item.MembershipStatus is "No plan" or "Inactive" ? "—"
+                            : item.MembershipStatus == "Expired" ? "Ended"
+                            : item.DaysRemaining?.ToString() ?? "—";
+                        <tr>
+                            <td>
+                                <div class="fx-list-row">
+                                    <span class="fx-avatar @(item.IsActive ? "" : "fx-avatar--neutral")" aria-hidden="true">@FlexifyUi.Initials(item.FullName)</span>
+                                    <div class="fx-list-row__body">
+                                        <strong>@item.FullName</strong>
+                                        <span>@item.Email</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(item.ContactNumber) ? "—" : item.ContactNumber)</td>
+                            <td>@item.JoinDate.ToString("MMM d, yyyy")</td>
+                            <td>@(string.IsNullOrWhiteSpace(item.PlanName) ? "No plan" : item.PlanName)</td>
+                            <td>@(item.MembershipEndDate?.ToString("MMM d, yyyy") ?? "—")</td>
+                            <td>@daysLabel</td>
+                            <td><span class="fx-members__pill @pillClass">@item.MembershipStatus</span></td>
+                            <td>
+                                <div class="fx-members__actions">
+                                    <a asp-action="Details" asp-route-id="@item.MemberId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View @item.FullName">View</a>
+                                    <a asp-action="Edit" asp-route-id="@item.MemberId" class="fx-btn fx-btn--ghost fx-btn--sm fx-memberships__edit" aria-label="Edit @item.FullName">Edit</a>
+                                    @if (item.IsActive)
+                                    {
+                                        <a asp-action="Delete" asp-route-id="@item.MemberId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Deactivate @item.FullName">Deactivate</a>
+                                    }
+                                    else if (User.IsInRole("Admin"))
+                                    {
+                                        <a asp-action="Delete" asp-route-id="@item.MemberId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete @item.FullName">Delete</a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="fx-members__pager" aria-label="Members pages">
+            @if (Model.HasPreviousPage)
+            {
+                <a asp-action="Index"
+                   asp-route-searchTerm="@Model.SearchTerm"
+                   asp-route-status="@Model.Status"
+                   asp-route-plan="@Model.Plan"
+                   asp-route-page="@(Model.CurrentPage - 1)">Previous</a>
+            }
+            else
+            {
+                <span aria-disabled="true">Previous</span>
+            }
+
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <a asp-action="Index"
+                   asp-route-searchTerm="@Model.SearchTerm"
+                   asp-route-status="@Model.Status"
+                   asp-route-plan="@Model.Plan"
+                   asp-route-page="@i"
+                   aria-current="@(i == Model.CurrentPage ? "page" : null)">@i</a>
+            }
+
+            @if (Model.HasNextPage)
+            {
+                <a asp-action="Index"
+                   asp-route-searchTerm="@Model.SearchTerm"
+                   asp-route-status="@Model.Status"
+                   asp-route-plan="@Model.Plan"
+                   asp-route-page="@(Model.CurrentPage + 1)">Next</a>
+            }
+            else
+            {
+                <span aria-disabled="true">Next</span>
+            }
+        </nav>
+    }
 </div>
 
-@if (Model.TotalPages > 1)
-{
-    <nav class="fx-pagination" aria-label="Members pages">
-        @if (Model.HasPreviousPage)
-        {
-            <a asp-action="Index" asp-route-searchTerm="@Model.SearchTerm" asp-route-page="@(Model.CurrentPage - 1)">Previous</a>
-        }
-        else
-        {
-            <span aria-disabled="true">Previous</span>
-        }
+@section Scripts {
+<script>
+(() => {
+  const form = document.getElementById('membersFilterForm');
+  const search = document.getElementById('searchTerm');
+  const status = document.getElementById('status');
+  const plan = document.getElementById('plan');
+  if (!form) return;
 
-        @for (int i = 1; i <= Model.TotalPages; i++)
-        {
-            <a asp-action="Index" asp-route-searchTerm="@Model.SearchTerm" asp-route-page="@i"
-               aria-current="@(i == Model.CurrentPage ? "page" : null)">@i</a>
-        }
+  const submitFilters = () => {
+    for (const el of form.querySelectorAll('input, select')) {
+      if (!el.name) continue;
+      if (!(el.value || '').trim()) el.disabled = true;
+    }
+    form.requestSubmit ? form.requestSubmit() : form.submit();
+  };
 
-        @if (Model.HasNextPage)
-        {
-            <a asp-action="Index" asp-route-searchTerm="@Model.SearchTerm" asp-route-page="@(Model.CurrentPage + 1)">Next</a>
-        }
-        else
-        {
-            <span aria-disabled="true">Next</span>
-        }
-    </nav>
+  let timer = null;
+  if (search) {
+    search.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(submitFilters, 350);
+    });
+  }
+  if (status) status.addEventListener('change', submitFilters);
+  if (plan) plan.addEventListener('change', submitFilters);
+})();
+</script>
 }

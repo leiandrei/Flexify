@@ -18,9 +18,9 @@ namespace GymCrudApp.Controllers
 
         // GET: /Members
         [HttpGet]
-        public async Task<IActionResult> Index(string? searchTerm, int page = 1)
+        public async Task<IActionResult> Index(string? searchTerm, string? status, string? plan, int page = 1)
         {
-            var model = await _memberService.GetPagedAsync(searchTerm, page, pageSize: 10);
+            var model = await _memberService.GetPagedAsync(searchTerm, status, plan, page, pageSize: 10);
             return View(model);
         }
 

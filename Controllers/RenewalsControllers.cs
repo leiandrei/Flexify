@@ -46,7 +46,7 @@ namespace GymCrudApp.Controllers
             var staffId = await ResolveCurrentStaffIdAsync();
             if (staffId is null)
             {
-                ModelState.AddModelError(string.Empty, "Your account isn't linked to a staff profile.");
+                ModelState.AddModelError(string.Empty, "Your account isn't linked to a staff profile, and no active staff is available to record this renewal.");
                 return await RedisplayAsync(model);
             }
 
@@ -67,22 +67,33 @@ namespace GymCrudApp.Controllers
             if (refreshed == null) return NotFound();
 
             model.AvailablePlans = refreshed.AvailablePlans;
+            model.PlanPrices = refreshed.PlanPrices;
             model.MemberName = refreshed.MemberName;
             model.CurrentPlanName = refreshed.CurrentPlanName;
             model.CurrentEndDate = refreshed.CurrentEndDate;
             model.CurrentStatus = refreshed.CurrentStatus;
             model.ProjectedStartDate = refreshed.ProjectedStartDate;
             model.ProjectedEndDate = refreshed.ProjectedEndDate;
+            if (model.Amount <= 0 && refreshed.PlanPrices.TryGetValue(model.PlanId, out var price))
+                model.Amount = price;
 
             return View(model);
         }
 
         private async Task<int?> ResolveCurrentStaffIdAsync()
         {
-            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
-                return null;
+            if (int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                var linked = await _renewalService.GetStaffIdByUserIdAsync(userId);
+                if (linked is not null)
+                    return linked;
+            }
 
-            return await _renewalService.GetStaffIdByUserIdAsync(userId);
+            // Admins often have no Staff row; still allow renewals attributed to an active staff member.
+            if (User.IsInRole("Admin"))
+                return await _renewalService.GetFallbackStaffIdAsync();
+
+            return null;
         }
     }
 }

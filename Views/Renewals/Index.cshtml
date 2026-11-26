@@ -1,0 +1,60 @@
+@model IEnumerable<GymCrudApp.ViewModels.Renewals.ExpiringMemberItemViewModel>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Renewals";
+    var items = Model?.ToList() ?? new List<GymCrudApp.ViewModels.Renewals.ExpiringMemberItemViewModel>();
+}
+
+<div class="fx-min">
+    <header class="fx-page-head">
+        <div>
+            <h1>Renewals</h1>
+            <p class="fx-muted">@items.Count @(items.Count == 1 ? "member" : "members") expiring soon or recently expired</p>
+        </div>
+    </header>
+
+    @if (!items.Any())
+    {
+        <p class="fx-muted">No memberships need renewal right now.</p>
+    }
+    else
+    {
+        <div class="fx-members__table-wrap">
+            <table class="fx-members__table">
+                <thead>
+                    <tr>
+                        <th scope="col">Member</th>
+                        <th scope="col">Plan</th>
+                        <th scope="col">Ends</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="fx-num">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fx-list-row">
+                                    <span class="fx-avatar">@FlexifyUi.Initials(m.FullName)</span>
+                                    <div class="fx-list-row__body">
+                                        <strong>@m.FullName</strong>
+                                        <span class="fx-muted">@m.Email</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@m.CurrentPlanName · @FlexifyUi.Peso(m.CurrentPlanPrice)</td>
+                            <td>@m.CurrentEndDate.ToString("MMM d, yyyy")</td>
+                            <td>
+                                <span class="fx-members__pill @(m.Status == "Expired" ? "is-expired" : "is-expiring")">@m.Status</span>
+                            </td>
+                            <td class="fx-num">
+                                <a asp-action="Renew" asp-route-id="@m.MemberId" class="fx-btn fx-btn--primary fx-btn--sm">Renew</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

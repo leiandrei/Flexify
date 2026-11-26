@@ -130,9 +130,10 @@ namespace GymCrudApp.Services
                 AvailablePlans = activePlans.Select(p => new SelectListItem
                 {
                     Value = p.planId.ToString(),
-                    Text = $"{p.planName} ({p.durationDays} days - ₱{p.planPrice:N2})",
+                    Text = $"{p.planName} ({p.durationDays} days - ₱{p.planPrice:N0})",
                     Selected = p.planId == selectedPlan.planId
-                }).ToList()
+                }).ToList(),
+                PlanPrices = activePlans.ToDictionary(p => p.planId, p => p.planPrice)
             };
         }
 
@@ -292,6 +293,16 @@ namespace GymCrudApp.Services
             return await _context.Staff
                 .AsNoTracking()
                 .Where(s => s.userId == userId)
+                .Select(s => (int?)s.StaffID)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<int?> GetFallbackStaffIdAsync()
+        {
+            return await _context.Staff
+                .AsNoTracking()
+                .Where(s => s.User == null || s.User.isActive)
+                .OrderBy(s => s.StaffID)
                 .Select(s => (int?)s.StaffID)
                 .FirstOrDefaultAsync();
         }

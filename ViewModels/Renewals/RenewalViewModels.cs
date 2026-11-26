@@ -52,6 +52,9 @@ namespace GymCrudApp.ViewModels.Renewals
         public DateTime ProjectedEndDate { get; set; }
 
         public IEnumerable<SelectListItem> AvailablePlans { get; set; } = new List<SelectListItem>();
+
+        /// <summary>PlanId → list price for client-side amount updates.</summary>
+        public Dictionary<int, decimal> PlanPrices { get; set; } = new();
     }
 
     public class RenewalResult

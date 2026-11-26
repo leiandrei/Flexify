@@ -37,11 +37,9 @@ namespace GymCrudApp.Models
         [DataType(DataType.Date)]
         public DateTime birthdate { get; set; }
 
-        // email (reusing your custom GmailOnly attribute)
         [Required(ErrorMessage = "This field is required. Please provide a valid email.")]
         [EmailAddress(ErrorMessage = "Invalid email address. Please provide a valid email.")]
-        [StringLength(100, MinimumLength = 10, ErrorMessage = "The field email must be between 10 and 100 characters long.")]
-        [GmailOnly(ErrorMessage = "Only @gmail.com email addresses are allowed.")]
+        [StringLength(100, MinimumLength = 5, ErrorMessage = "The field email must be between 5 and 100 characters long.")]
         public string userEmail { get; set; } = string.Empty;
 
         // join date

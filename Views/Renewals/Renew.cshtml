@@ -1,0 +1,129 @@
+@model GymCrudApp.ViewModels.Renewals.OneClickRenewalViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = $"Renew {Model.MemberName}";
+    var methods = new[] { "Cash", "GCash", "Maya", "Card", "Bank Transfer" };
+}
+
+<div class="fx-min fx-edit-page">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-controller="Members" asp-action="Details" asp-route-id="@Model.MemberId">@Model.MemberName</a>
+        <span aria-hidden="true"> / </span>
+        <span>Renew</span>
+    </nav>
+
+    <header class="fx-page-head">
+        <div>
+            <h1>Renew membership</h1>
+            <p class="fx-muted">
+                @if (!string.IsNullOrWhiteSpace(Model.CurrentPlanName) && Model.CurrentEndDate.HasValue)
+                {
+                    <text>Current: @Model.CurrentPlanName · @Model.CurrentStatus · ends @Model.CurrentEndDate.Value.ToString("MMM d, yyyy")</text>
+                }
+                else
+                {
+                    <text>No active plan on file. This starts a new membership.</text>
+                }
+            </p>
+        </div>
+    </header>
+
+    <div class="fx-kpis" style="margin-bottom: 28px">
+        <div class="fx-kpi">
+            <span>New start</span>
+            <b>@Model.ProjectedStartDate.ToString("MMM d, yyyy")</b>
+        </div>
+        <div class="fx-kpi">
+            <span>New end</span>
+            <b>@Model.ProjectedEndDate.ToString("MMM d, yyyy")</b>
+        </div>
+        <div class="fx-kpi">
+            <span>Amount due</span>
+            <b id="renewAmountLabel">@FlexifyUi.Peso(Model.Amount)</b>
+            <small>From selected plan</small>
+        </div>
+    </div>
+
+    <form asp-action="Renew" method="post" class="fx-form fx-form--wide" id="renewForm">
+        <div asp-validation-summary="ModelOnly" class="fx-field--full"></div>
+        <input type="hidden" asp-for="MemberId" />
+
+        <div class="fx-field">
+            <label asp-for="PlanId" class="fx-label">Membership plan</label>
+            <select asp-for="PlanId" class="fx-select" id="renewPlan">
+                @foreach (var plan in Model.AvailablePlans)
+                {
+                    var planId = int.Parse(plan.Value!);
+                    var price = Model.PlanPrices.GetValueOrDefault(planId);
+                    if (plan.Selected)
+                    {
+                        <option value="@plan.Value" data-price="@price.ToString(System.Globalization.CultureInfo.InvariantCulture)" selected>
+                            @plan.Text
+                        </option>
+                    }
+                    else
+                    {
+                        <option value="@plan.Value" data-price="@price.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                            @plan.Text
+                        </option>
+                    }
+                }
+            </select>
+            <span asp-validation-for="PlanId" class="fx-error"></span>
+            <span class="fx-hint">Early renewals start the day after the current end date so no paid days are lost.</span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="Amount" class="fx-label">Payment amount</label>
+            <input asp-for="Amount" class="fx-input" id="renewAmount" step="0.01" min="0.01" />
+            <span asp-validation-for="Amount" class="fx-error"></span>
+        </div>
+
+        <fieldset class="fx-field fx-sale__methods">
+            <legend class="fx-label">Payment method</legend>
+            <div class="fx-segmented" role="radiogroup" aria-label="Payment method">
+                @foreach (var method in methods)
+                {
+                    var id = "renew-method-" + method.Replace(" ", "-");
+                    <label for="@id">
+                        <input type="radio" asp-for="PaymentType" value="@method" id="@id" />
+                        @(method == "Bank Transfer" ? "Bank" : method)
+                    </label>
+                }
+            </div>
+            <span asp-validation-for="PaymentType" class="fx-error"></span>
+        </fieldset>
+
+        <div class="fx-field">
+            <label asp-for="ReferenceNumber" class="fx-label">Reference number</label>
+            <input asp-for="ReferenceNumber" class="fx-input" placeholder="Required for non-cash" />
+            <span asp-validation-for="ReferenceNumber" class="fx-error"></span>
+            <span class="fx-hint">Leave blank for cash.</span>
+        </div>
+
+        <div class="fx-form__actions fx-field--full">
+            <button type="submit" class="fx-btn fx-btn--primary">Confirm renewal</button>
+            <a asp-controller="Members" asp-action="Details" asp-route-id="@Model.MemberId" class="fx-btn fx-btn--ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    (() => {
+      const plan = document.getElementById('renewPlan');
+      const amount = document.getElementById('renewAmount');
+      const label = document.getElementById('renewAmountLabel');
+      if (!plan || !amount) return;
+      const peso = (n) => '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      plan.addEventListener('change', () => {
+        const opt = plan.selectedOptions[0];
+        const price = opt?.dataset?.price;
+        if (price == null || price === '') return;
+        amount.value = Number(price).toFixed(2);
+        if (label) label.textContent = peso(price);
+      });
+    })();
+    </script>
+}

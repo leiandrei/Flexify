@@ -90,100 +90,106 @@
         }
     </section>
 
-    <section class="fx-section" id="payments" aria-labelledby="pay-h">
-        <div class="fx-section__head">
-            <h2 id="pay-h">Payment history</h2>
-            <span class="fx-muted" style="font-size:13px">@Model.Payments.Count @(Model.Payments.Count == 1 ? "payment" : "payments")</span>
-        </div>
-        <div class="fx-members__table-wrap">
-            <table class="fx-members__table">
-                <thead>
-                    <tr>
-                        <th scope="col">Date</th>
-                        <th scope="col">Plan</th>
-                        <th scope="col">Method</th>
-                        <th scope="col">Reference</th>
-                        <th scope="col" class="fx-num">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (!Model.Payments.Any())
-                    {
-                        <tr><td colspan="5" class="fx-table__empty">No payments yet.</td></tr>
-                    }
-                    else
-                    {
-                        @foreach (var p in Model.Payments)
+    @if (Model.Payments.Any() || Model.ExpiryDate.HasValue)
+    {
+        <section class="fx-section" id="payments" aria-labelledby="pay-h">
+            <div class="fx-section__head">
+                <h2 id="pay-h">Payment history</h2>
+                <span class="fx-muted" style="font-size:13px">@Model.Payments.Count @(Model.Payments.Count == 1 ? "payment" : "payments")</span>
+            </div>
+            <div class="fx-members__table-wrap">
+                <table class="fx-members__table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Date</th>
+                            <th scope="col">Plan</th>
+                            <th scope="col">Method</th>
+                            <th scope="col">Reference</th>
+                            <th scope="col" class="fx-num">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Payments.Any())
                         {
-                            <tr class="@(p.IsVoided ? "is-void" : null)">
-                                <td>@p.PaymentDate.ToString("MMM d, yyyy")</td>
-                                <td>@p.PlanName</td>
-                                <td>@p.PaymentType</td>
-                                <td>@(string.IsNullOrWhiteSpace(p.ReferenceNumber) ? "—" : p.ReferenceNumber)</td>
-                                <td class="fx-num">
-                                    @if (p.IsVoided)
-                                    {
-                                        <span class="fx-badge fx-badge--overdue">Voided</span>
-                                    }
-                                    else
-                                    {
-                                        @FlexifyUi.Peso(p.Amount)
-                                    }
-                                </td>
-                            </tr>
+                            <tr><td colspan="5" class="fx-table__empty">No payments yet.</td></tr>
                         }
-                    }
-                </tbody>
-            </table>
-        </div>
-    </section>
+                        else
+                        {
+                            @foreach (var p in Model.Payments)
+                            {
+                                <tr class="@(p.IsVoided ? "is-void" : null)">
+                                    <td>@p.PaymentDate.ToString("MMM d, yyyy")</td>
+                                    <td>@p.PlanName</td>
+                                    <td>@p.PaymentType</td>
+                                    <td>@(string.IsNullOrWhiteSpace(p.ReferenceNumber) ? "—" : p.ReferenceNumber)</td>
+                                    <td class="fx-num">
+                                        @if (p.IsVoided)
+                                        {
+                                            <span class="fx-badge fx-badge--overdue">Voided</span>
+                                        }
+                                        else
+                                        {
+                                            @FlexifyUi.Peso(p.Amount)
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
 
-    <section class="fx-section" id="visits" aria-labelledby="vis-h">
-        <div class="fx-section__head">
-            <h2 id="vis-h">Gym visits</h2>
-            <span class="fx-muted" style="font-size:13px">@Model.VisitsThisMonth this month</span>
-        </div>
-        <div class="fx-members__table-wrap">
-            <table class="fx-members__table">
-                <thead>
-                    <tr>
-                        <th scope="col">Date</th>
-                        <th scope="col">Checked in</th>
-                        <th scope="col">Checked out</th>
-                        <th scope="col" class="fx-num">Time spent</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (!Model.AttendanceLogs.Any())
-                    {
-                        <tr><td colspan="4" class="fx-table__empty">No visits recorded yet.</td></tr>
-                    }
-                    else
-                    {
-                        @foreach (var a in Model.AttendanceLogs.Take(12))
+    @if (Model.AttendanceLogs.Any() || Model.ExpiryDate.HasValue)
+    {
+        <section class="fx-section" id="visits" aria-labelledby="vis-h">
+            <div class="fx-section__head">
+                <h2 id="vis-h">Gym visits</h2>
+                <span class="fx-muted" style="font-size:13px">@Model.VisitsThisMonth this month</span>
+            </div>
+            <div class="fx-members__table-wrap">
+                <table class="fx-members__table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Date</th>
+                            <th scope="col">Checked in</th>
+                            <th scope="col">Checked out</th>
+                            <th scope="col" class="fx-num">Time spent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.AttendanceLogs.Any())
                         {
-                            var isToday = a.CheckIn.Date == DateTime.Today;
-                            <tr>
-                                <td>@(isToday ? "Today" : a.CheckIn.ToString("MMM d"))</td>
-                                <td>@a.CheckIn.ToString("h:mm tt")</td>
-                                <td>
-                                    @if (!a.CheckOut.HasValue)
-                                    {
-                                        <span class="fx-members__pill is-active">On the floor</span>
-                                    }
-                                    else
-                                    {
-                                        @a.CheckOut.Value.ToString("h:mm tt")
-                                    }
-                                </td>
-                                <td class="fx-num">@a.DurationDisplay</td>
-                            </tr>
+                            <tr><td colspan="4" class="fx-table__empty">No visits recorded yet.</td></tr>
                         }
-                    }
-                </tbody>
-            </table>
-        </div>
-    </section>
+                        else
+                        {
+                            @foreach (var a in Model.AttendanceLogs.Take(12))
+                            {
+                                var isToday = a.CheckIn.Date == DateTime.Today;
+                                <tr>
+                                    <td>@(isToday ? "Today" : a.CheckIn.ToString("MMM d"))</td>
+                                    <td>@a.CheckIn.ToString("h:mm tt")</td>
+                                    <td>
+                                        @if (!a.CheckOut.HasValue)
+                                        {
+                                            <span class="fx-members__pill is-active">On the floor</span>
+                                        }
+                                        else
+                                        {
+                                            @a.CheckOut.Value.ToString("h:mm tt")
+                                        }
+                                    </td>
+                                    <td class="fx-num">@a.DurationDisplay</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
 
     <section class="fx-section" id="plans" aria-labelledby="plans-h">
         <div class="fx-section__head">
@@ -236,11 +242,11 @@
                     Selected:
                     <b id="portalPlanSel" style="color:var(--fx-ink)">@defaultPlan.PlanName · @FlexifyUi.Peso(defaultPlan.PlanPrice)</b>
                 </p>
-                <span class="fx-btn fx-btn--primary" id="portalPlanAction" aria-disabled="true">@defaultAction</span>
             </div>
-            <p class="fx-muted" style="font-size:13px">
-                Staff record the payment and activate the plan the same day. Use Ask Flexify if you have a pricing question.
-            </p>
+            <div class="fx-portal__desk-note" id="portalPlanAction" role="note">
+                <strong id="portalPlanActionTitle">@defaultAction</strong>
+                <p>Payments aren’t taken in this app. Tell the front desk which plan you want — cash, GCash, Maya, card, or bank transfer.</p>
+            </div>
         }
     </section>
 </div>
@@ -250,12 +256,12 @@
 (() => {
   const buttons = document.querySelectorAll('#portalPlanPicker .fx-plan');
   const sel = document.getElementById('portalPlanSel');
-  const action = document.getElementById('portalPlanAction');
-  if (!buttons.length || !sel || !action) return;
+  const title = document.getElementById('portalPlanActionTitle');
+  if (!buttons.length || !sel) return;
   buttons.forEach(btn => btn.addEventListener('click', () => {
     buttons.forEach(o => o.setAttribute('aria-pressed', o === btn ? 'true' : 'false'));
     sel.textContent = `${btn.dataset.n} · ${btn.dataset.p}`;
-    action.textContent = btn.dataset.action || 'Ask at the front desk';
+    if (title) title.textContent = btn.dataset.action || 'Ask at the front desk';
   }));
 })();
 </script>

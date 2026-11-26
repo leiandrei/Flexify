@@ -171,7 +171,14 @@ namespace GymCrudApp.Tests
             Assert.Equal(1, metrics.ExpiringIn7DaysCount);       // Member 2 only
             Assert.Equal(3000m, metrics.RevenueThisMonth);       // 1500 + 1500 (excludes 9999 voided & Oct payment)
             Assert.Equal(2, metrics.CheckInsTodayCount);         // 2 check-ins on Nov 29
+            Assert.Equal(2, metrics.OnFloorCount);               // neither checked out
             Assert.Equal(2, metrics.NewMembersThisMonthCount);   // Member 2 + Member 3 joined in Nov 2026
+            Assert.Contains(metrics.ExpiringSoon, x => x.MemberId == 2);
+            Assert.Contains(metrics.ExpiringSoon, x => x.MemberId == 3 && x.Status == "Expired");
+            Assert.Equal(3, metrics.LatestPayments.Count);      // voided excluded; includes Oct payment
+            Assert.DoesNotContain(metrics.LatestPayments, p => p.Amount == 9999m);
+            Assert.Equal(2, metrics.PlanMix.Sum(p => p.Count)); // Member 1 + Member 2 still active
+            Assert.Contains(metrics.PlanMix, p => p.PlanName == "Monthly Basic");
         }
 
         [Fact]
@@ -190,8 +197,11 @@ namespace GymCrudApp.Tests
 
             Assert.Equal(6, metrics.MonthlyRevenueLabels.Count);
             Assert.Equal(6, metrics.MonthlyRevenueTotals.Count);
+            Assert.Equal("Nov", metrics.MonthlyRevenueLabels[5]);
+            Assert.Equal("Oct", metrics.MonthlyRevenueLabels[4]);
             Assert.Equal(3000m, metrics.MonthlyRevenueTotals[5]); // Nov 2026
             Assert.Equal(1500m, metrics.MonthlyRevenueTotals[4]); // Oct 2026
+            Assert.Equal(100m, metrics.RevenueChangePercent);    // 3000 vs 1500 = +100%
         }
 
         [Fact]

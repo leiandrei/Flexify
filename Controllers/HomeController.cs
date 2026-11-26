@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Threading.Tasks;
 using GymCrudApp.Models;
+using GymCrudApp.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,10 +9,18 @@ namespace GymCrudApp.Controllers
 {
     public class HomeController : Controller
     {
-        [AllowAnonymous]
-        public IActionResult Index()
+        private readonly ILandingPageService _landingPageService;
+
+        public HomeController(ILandingPageService landingPageService)
         {
-            return View();
+            _landingPageService = landingPageService;
+        }
+
+        [AllowAnonymous]
+        public async Task<IActionResult> Index()
+        {
+            var vm = await _landingPageService.GetLandingPageDataAsync();
+            return View(vm);
         }
 
         // No [AllowAnonymous] here: protected by FallbackPolicy

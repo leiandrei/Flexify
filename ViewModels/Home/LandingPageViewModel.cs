@@ -4,14 +4,11 @@ namespace GymCrudApp.ViewModels.Home
 {
     public class LandingPageViewModel
     {
-        // Hero Section Metadata
-        public string HeroTitle { get; set; } = "Train Smarter. Track Every Session.";
-        public string HeroSubtitle { get; set; } = "Flexible memberships, real-time attendance tracking, and transparent billing built for your fitness goals.";
+        public string HeroTitle { get; set; } = "Show up. Train hard. Stay ready.";
+        public string HeroSubtitle { get; set; } = "A simple plan for people who just want to work out. Always know your days left from your phone.";
 
-        // Dynamic Plans from MembershipPlans table (no new table needed)
         public List<PublicMembershipPlanViewModel> Plans { get; set; } = new();
 
-        // Facility & Contact Information
         public string FacilityName { get; set; } = "Flexify Fitness Hub";
         public string FacilityAddress { get; set; } = "2nd Floor, Fitness Plaza, Metro Manila";
         public string OperatingHours { get; set; } = "Mon–Sat: 6:00 AM – 10:00 PM | Sun: 8:00 AM – 6:00 PM";

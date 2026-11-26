@@ -36,7 +36,7 @@ namespace GymCrudApp.Services
             {
                 return new[]
                 {
-                    "When do I expire?",
+                    "My expiry",
                     "Latest payment",
                     "Compare plans"
                 };
@@ -138,17 +138,22 @@ namespace GymCrudApp.Services
 
             var plansText = landingData.Plans.Any()
                 ? string.Join("\n", landingData.Plans.Select(p =>
-                    $"- {p.PlanName}: ₱{p.PlanPrice:N0} · {p.DurationDays} {(p.DurationDays == 1 ? "day" : "days")}"))
+                    $"- {p.PlanName}: ₱{p.PlanPrice:N0} · {p.DurationDays} {(p.DurationDays == 1 ? "day" : "days")} — {p.PlanDescription}"))
                 : "- No active plans published online.";
 
             var systemPrompt = $@"
 You are the virtual front-desk assistant for {landingData.FacilityName}.
 Be accurate and polite. Use ONLY the verified facts below. Never invent prices, policies, or personal data.
 
+SCOPE / GUARDRAILS:
+- You only help with gym hours, membership plans & pricing, renewals, payment methods, amenities/rules, and (when logged in) the member's own membership/payment/visit facts or staff gym metrics.
+- If the question is off-topic, nonsense, or about ownership/company/politics/personal opinions, say you don't know and point them back to plans, hours, renewals, or payments. Do NOT dump the full plans+hours overview unless they asked for plans or hours.
+- Never invent an owner, CEO, or company history.
+
 FORMAT (important):
 - Prefer short lines and bullet lists over long paragraphs.
 - For plans, hours, or multiple facts: use a one-line intro, then markdown bullets like ""- Item"".
-- Put each plan on its own bullet: ""- Plan name: ₱price · N days"".
+- For ""compare plans"", highlight differences (duration, price, and what each includes) — do not only list prices.
 - Keep replies scannable. Avoid stuffing many facts into one sentence with semicolons.
 - Do not use tables or HTML.
 
@@ -158,7 +163,7 @@ FACILITY INFO:
 - Contact: {landingData.ContactPhone} | {landingData.ContactEmail}
 - Active Membership Plans:
 {plansText}
-- Accepted Payments: Cash, GCash, Maya, Bank Transfer, and Card (non-cash payments require a reference number).
+- Accepted Payments: Cash, GCash, Maya, Bank Transfer, and Card (non-cash payments require a reference number). Payments are recorded at the front desk — members cannot pay inside this app.
 - Renewal Rule: Early renewals start the day after the current expiration date so no paid days are lost; expired plans start on the renewal date.
 - Amenities & Rules: Day-use lockers, showers, free member Wi-Fi, 2-hour validated parking, minimum age 16 (parental consent for 16-17), closed-toe athletic shoes required.
 
@@ -282,7 +287,7 @@ FACILITY INFO:
             }
 
             // 2. Account-scoped member intents
-            if (q.Contains("expire") || q.Contains("expiry") || q.Contains("subscription") || q.Contains("my plan") || q.Contains("my membership") || q.Contains("days remaining"))
+            if (q.Contains("expire") || q.Contains("expiry") || q.Contains("my expiry") || q.Contains("subscription") || q.Contains("my plan") || q.Contains("my membership") || q.Contains("days remaining") || q.Contains("days left"))
             {
                 if (!isMember || portal == null)
                 {
@@ -354,13 +359,20 @@ FACILITY INFO:
                     "How renewal works:\n- Early renewals start the day after your current end date (no lost days).\n- Expired plans start on the renewal date.");
             }
 
+            if (q.Contains("compare"))
+            {
+                return ("Fallback.ComparePlans", false,
+                    "Here’s how the plans compare:\n" + plansText +
+                    "\n\nDay Pass is best for trying the floor once. Monthly/Student for regular training. Quarterly and Annual save more if you come often.\nPay at the front desk to start — this app doesn’t take payments.");
+            }
+
             if (q.Contains("plan") || q.Contains("price") || q.Contains("rate") || q.Contains("cost") || q.Contains("fee") || q.Contains("offer"))
             {
                 return ("Fallback.Plans", false, $"Here are the current plans:\n{plansText}");
             }
 
-            return ("Fallback.General", false,
-                $"Here’s the quick overview:\n\nPlans:\n{plansText}\n\nHours:\n- {landingData.OperatingHours}\n\nContact:\n- {landingData.ContactPhone}");
+            return ("Fallback.Unknown", false,
+                "I’m not sure about that. I can help with:\n- Gym hours\n- Membership plans & pricing\n- How renewals work\n- Payment methods\n- Your membership details (when logged in)\n\nTry one of the suggestions below, or ask about those topics.");
         }
         
         public IReadOnlyList<string> GetDefaultSuggestedPrompts(ClaimsPrincipal user)

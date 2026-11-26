@@ -104,6 +104,16 @@
             return html || withBold;
         };
 
+        const scrollChatToEnd = () => {
+            requestAnimationFrame(() => {
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+                const last = messagesEl.lastElementChild;
+                if (last && typeof last.scrollIntoView === 'function') {
+                    last.scrollIntoView({ block: 'end', behavior: 'smooth' });
+                }
+            });
+        };
+
         const appendMessage = (text, sender) => {
             const bubble = document.createElement('div');
             bubble.className = `fx-chat__msg fx-chat__msg--${sender}`;
@@ -113,7 +123,7 @@
                 bubble.textContent = text;
             }
             messagesEl.appendChild(bubble);
-            messagesEl.scrollTop = messagesEl.scrollHeight;
+            scrollChatToEnd();
             return bubble;
         };
 
@@ -127,6 +137,8 @@
                 chip.type = 'button';
                 chip.className = 'fx-chat__chip';
                 chip.textContent = promptText;
+                chip.title = promptText;
+                chip.setAttribute('aria-label', promptText);
                 chip.addEventListener('click', () => sendMessage(promptText));
                 promptsEl.appendChild(chip);
             });
@@ -181,15 +193,18 @@
                 });
 
                 const data = await res.json();
-                const reply = data.reply || data.Reply || 'Sorry, I could not generate a response.';
+                const reply = data.reply || data.Reply || "Sorry — I don't know that one. Try asking about plans, hours, renewals, or payments.";
                 typingBubble.innerHTML = formatChatHtml(reply);
+                scrollChatToEnd();
 
                 const nextPrompts = data.suggestedPrompts || data.SuggestedPrompts;
                 if (Array.isArray(nextPrompts) && nextPrompts.length > 0) {
                     renderPrompts(nextPrompts);
                 }
+                scrollChatToEnd();
             } catch {
                 typingBubble.innerHTML = formatChatHtml('Unable to reach the assistant right now. Please try again.');
+                scrollChatToEnd();
             } finally {
                 chatInput.disabled = false;
                 sendBtn.disabled = false;

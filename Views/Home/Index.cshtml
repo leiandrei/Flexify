@@ -10,24 +10,72 @@
 <div class="fx-landing">
     <div class="fx-wrap">
         <section class="fx-landing__hero">
-            <h1 class="fx-landing__display">
-                @{
-                    var heroLines = Model.HeroTitle
-                        .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                }
-                @for (var i = 0; i < heroLines.Length; i++)
-                {
-                    @(heroLines[i] + ".")
-                    if (i < heroLines.Length - 1)
-                    {
-                        <br />
+            <div class="fx-landing__copy">
+                <p class="fx-landing__brand">Flexify</p>
+                <h1 class="fx-landing__display">
+                    @{
+                        var heroLines = Model.HeroTitle
+                            .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                     }
-                }
-            </h1>
-            <p class="fx-landing__lead">@Model.HeroSubtitle</p>
+                    @for (var i = 0; i < heroLines.Length; i++)
+                    {
+                        @(heroLines[i] + ".")
+                        if (i < heroLines.Length - 1)
+                        {
+                            <br />
+                        }
+                    }
+                </h1>
+                <p class="fx-landing__lead">@Model.HeroSubtitle</p>
+                <div class="fx-row fx-landing__cta">
+                    @if (!signedIn)
+                    {
+                        <a class="fx-btn fx-btn--primary fx-btn--lg" href="#plans">See membership plans</a>
+                        <a class="fx-btn fx-btn--ghost fx-btn--lg" asp-controller="Account" asp-action="Register">Become a member</a>
+                    }
+                    else if (User.IsInRole("Admin"))
+                    {
+                        <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="AdminDashboard" asp-action="Index">Go to dashboard</a>
+                    }
+                    else if (User.IsInRole("Staff"))
+                    {
+                        <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Members" asp-action="Index">Go to members</a>
+                    }
+                    else if (User.IsInRole("Member"))
+                    {
+                        <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="MemberPortal" asp-action="Index">Open my portal</a>
+                    }
+                </div>
+            </div>
+            <figure class="fx-landing__media">
+                <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1400&q=80"
+                     alt="People training with free weights on a gym floor"
+                     width="1400"
+                     height="1050"
+                     loading="eager" />
+            </figure>
+        </section>
+
+        <section class="fx-landing__benefits" aria-label="What’s included">
+            <div>
+                <h2>Full gym floor access</h2>
+                <p>Free weights, machines, and cardio — every paid plan includes the floor.</p>
+            </div>
+            <div>
+                <h2>Know your days left</h2>
+                <p>Your portal shows plan status, payments, and visits without carrying a card.</p>
+            </div>
+            <div>
+                <h2>Pay at the desk</h2>
+                <p>Cash, GCash, Maya, card, or bank transfer. Staff activate you the same day.</p>
+            </div>
         </section>
 
         <section id="plans" aria-label="Choose a plan">
+            <header class="fx-landing__plans-head">
+                <h2>Membership plans</h2>
+                <p class="fx-muted">Pick by how often you train. Each card lists what’s included — pay at the front desk to start.</p>
+            </header>
             @if (!Model.Plans.Any())
             {
                 <p class="fx-muted">Plans will appear here once the gym publishes them.</p>
@@ -66,14 +114,6 @@
                             <a class="fx-btn fx-btn--ghost fx-btn--lg" asp-controller="Account" asp-action="Login">Log in</a>
                             <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Account" asp-action="Register" id="planJoin">Become a member</a>
                         }
-                        else if (User.IsInRole("Admin"))
-                        {
-                            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="AdminDashboard" asp-action="Index">Go to dashboard</a>
-                        }
-                        else if (User.IsInRole("Staff"))
-                        {
-                            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Members" asp-action="Index">Go to members</a>
-                        }
                         else if (User.IsInRole("Member"))
                         {
                             <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="MemberPortal" asp-action="Index">Open my portal</a>
@@ -87,7 +127,7 @@
             <div>
                 <span class="fx-how__n">1</span>
                 <h2>Create your account</h2>
-                <p>Sign up with your Gmail address. Takes a minute.</p>
+                <p>Sign up with your email. Takes a minute.</p>
             </div>
             <div>
                 <span class="fx-how__n">2</span>

@@ -4,13 +4,15 @@
     ViewData["Title"] = "Create your account";
     ViewData["AuthNavText"] = "Log in";
     ViewData["AuthNavAction"] = "Login";
+    var maxBirth = DateTime.Today.AddYears(-16).ToString("yyyy-MM-dd");
+    var minBirth = "1900-01-01";
 }
 
 <div class="fx-auth-box">
     <h1>Create your account</h1>
     <p class="fx-auth-box__lead">Sign up to track your membership, payments, and gym visits.</p>
 
-    <form asp-action="Register" method="post" class="fx-form fx-auth-form">
+    <form asp-action="Register" method="post" class="fx-form fx-auth-form" id="registerForm" autocomplete="on">
         <div asp-validation-summary="ModelOnly"></div>
 
         <div class="fx-field">
@@ -21,9 +23,9 @@
 
         <div class="fx-field">
             <label asp-for="Email" class="fx-label">Email</label>
-            <input asp-for="Email" class="fx-input" type="email" autocomplete="email" placeholder="you@gmail.com" />
+            <input asp-for="Email" class="fx-input" type="email" autocomplete="email" placeholder="you@email.com" />
             <span asp-validation-for="Email" class="fx-error"></span>
-            <span class="fx-hint">Use a Gmail address (ends in @("@gmail.com")).</span>
+            <span class="fx-hint">Any valid email works.</span>
         </div>
 
         <div class="fx-field">
@@ -34,25 +36,32 @@
 
         <div class="fx-field">
             <label asp-for="Birthdate" class="fx-label">Birthdate</label>
-            <input asp-for="Birthdate" class="fx-input" type="date" />
+            <input asp-for="Birthdate" class="fx-input" type="date" min="@minBirth" max="@maxBirth" />
             <span asp-validation-for="Birthdate" class="fx-error"></span>
+            <span class="fx-hint">Must be 16 or older. Future dates aren’t allowed.</span>
         </div>
 
         <div class="fx-field">
             <label asp-for="Password" class="fx-label">Password</label>
-            <input asp-for="Password" class="fx-input" autocomplete="new-password" />
+            <div class="fx-password">
+                <input asp-for="Password" class="fx-input" autocomplete="new-password" data-password-input />
+                <button type="button" class="fx-password__toggle" data-password-toggle aria-label="Show password">Show</button>
+            </div>
             <span asp-validation-for="Password" class="fx-error"></span>
-            <span class="fx-hint">At least 8 characters.</span>
+            <span class="fx-hint">At least 8 characters, with a letter and a number.</span>
         </div>
 
         <div class="fx-field">
             <label asp-for="ConfirmPassword" class="fx-label">Confirm password</label>
-            <input asp-for="ConfirmPassword" class="fx-input" autocomplete="new-password" />
+            <div class="fx-password">
+                <input asp-for="ConfirmPassword" class="fx-input" autocomplete="new-password" data-password-input />
+                <button type="button" class="fx-password__toggle" data-password-toggle aria-label="Show password">Show</button>
+            </div>
             <span asp-validation-for="ConfirmPassword" class="fx-error"></span>
         </div>
 
         <button type="submit" class="fx-btn fx-btn--primary fx-btn--lg fx-btn--block">Create account</button>
-        <p class="fx-hint fx-auth-form__note">Then pay at the front desk to start your plan.</p>
+        <p class="fx-hint fx-auth-form__note">Then pay at the front desk to start your plan. This app doesn’t take payments online.</p>
     </form>
 
     <p class="fx-auth-box__alt">Already a member? <a asp-action="Login">Log in</a></p>
@@ -60,4 +69,19 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+    (() => {
+      document.querySelectorAll('[data-password-toggle]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const wrap = btn.closest('.fx-password');
+          const input = wrap?.querySelector('[data-password-input]');
+          if (!input) return;
+          const show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          btn.textContent = show ? 'Hide' : 'Show';
+          btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        });
+      });
+    })();
+    </script>
 }

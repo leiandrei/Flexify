@@ -45,6 +45,8 @@ namespace GymCrudApp.Tests
             Assert.Null(portal.PlanName);
             Assert.Empty(portal.Payments);
             Assert.Empty(portal.AttendanceLogs);
+            Assert.Empty(portal.AvailablePlans);
+            Assert.Equal(0, portal.VisitsThisMonth);
         }
 
         [Fact]
@@ -102,9 +104,14 @@ namespace GymCrudApp.Tests
             Assert.Equal(0, metrics.ExpiringIn7DaysCount);
             Assert.Equal(0m, metrics.RevenueThisMonth);
             Assert.Equal(0, metrics.CheckInsTodayCount);
+            Assert.Equal(0, metrics.OnFloorCount);
             Assert.Equal(0, metrics.NewMembersThisMonthCount);
             Assert.Equal(7, metrics.DailyCheckInCounts.Count);
             Assert.Equal(6, metrics.MonthlyRevenueTotals.Count);
+            Assert.Empty(metrics.ExpiringSoon);
+            Assert.Empty(metrics.LatestPayments);
+            Assert.Empty(metrics.PlanMix);
+            Assert.Null(metrics.RevenueChangePercent);
         }
     }
 }

@@ -1,29 +1,46 @@
 ﻿@model GymCrudApp.ViewModels.Payments.PaymentDetailsViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Void Payment";
+    ViewData["Title"] = "Void payment";
 }
- 
-<header class="fx-page-head">
-    <h1>Void payment</h1>
-</header>
- 
-<div class="fx-card fx-narrow">
-    <dl class="fx-kv-list">
-        <div class="fx-kv"><dt>Member</dt><dd>@Model.MemberName</dd></div>
-        <div class="fx-kv"><dt>Plan</dt><dd>@Model.PlanName</dd></div>
-        <div class="fx-kv"><dt>Amount</dt><dd>@FlexifyUi.Peso(Model.Amount)</dd></div>
-        <div class="fx-kv"><dt>Method</dt><dd>@Model.PaymentType @(Model.ReferenceNumber != null ? "(" + Model.ReferenceNumber + ")" : "")</dd></div>
-        <div class="fx-kv"><dt>Date</dt><dd>@Model.PaymentDate.ToString("MMM d, yyyy")</dd></div>
-    </dl>
- 
-    <div class="fx-alert fx-alert--warn">
-        Voiding marks this payment as cancelled. It stays in the history but no longer counts toward revenue. Are you sure?
+
+<div class="fx-min fx-delete-page">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Payments</a>
+        <span aria-hidden="true"> / </span>
+        <a asp-action="Details" asp-route-id="@Model.PaymentId">#@Model.PaymentId</a>
+        <span aria-hidden="true"> / </span>
+        <span>Void</span>
+    </nav>
+
+    <header class="fx-page-head">
+        <div class="fx-member-detail__who">
+            <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.MemberName)</span>
+            <div>
+                <h1>Void @FlexifyUi.Peso(Model.Amount)?</h1>
+            </div>
+        </div>
+        <div class="fx-page-head__actions">
+            <a asp-action="Details" asp-route-id="@Model.PaymentId" class="fx-btn fx-btn--ghost">Cancel</a>
+            <form asp-action="Void" asp-route-id="@Model.PaymentId" method="post" class="fx-delete-page__form">
+                <button type="submit" class="fx-btn fx-btn--danger">Void payment</button>
+            </form>
+        </div>
+    </header>
+
+    <p class="fx-delete-page__lede">The record stays for your books, but it won’t count toward revenue. This can’t be undone.</p>
+
+    <div class="fx-kpis" style="--n:5">
+        <div class="fx-kpi"><span>Member</span><b>@Model.MemberName</b></div>
+        <div class="fx-kpi"><span>Plan</span><b>@Model.PlanName</b></div>
+        <div class="fx-kpi"><span>Method</span><b>@Model.PaymentType</b></div>
+        <div class="fx-kpi"><span>Date</span><b>@Model.PaymentDate.ToString("MMM d, yyyy")</b></div>
+        <div class="fx-kpi"><span>Recorded by</span><b>@Model.RecordedByStaffName</b></div>
     </div>
- 
-    <form asp-action="Void" asp-route-id="@Model.PaymentId" method="post" class="fx-form__actions">
-        <button type="submit" class="fx-btn fx-btn--danger">Confirm void</button>
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-    </form>
+
+    <div class="fx-alert fx-alert--warn" role="status">
+        @(string.IsNullOrWhiteSpace(Model.ReferenceNumber)
+            ? "Voided payments stay in history and no longer count toward revenue."
+            : $"Reference {Model.ReferenceNumber} · voided payments stay in history.")
+    </div>
 </div>
- 

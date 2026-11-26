@@ -18,7 +18,11 @@ namespace GymCrudApp.Services
             _context = context;
         }
 
-        public async Task<PaymentIndexViewModel> GetFilteredAsync(string? memberSearch, DateTime? filterDate)
+        public async Task<PaymentIndexViewModel> GetFilteredAsync(
+            string? memberSearch,
+            DateTime? filterDate,
+            string? paymentType = null,
+            int? planId = null)
         {
             var query = _context.Payments
                 .AsNoTracking()
@@ -40,6 +44,18 @@ namespace GymCrudApp.Services
             {
                 var targetDate = filterDate.Value.Date;
                 query = query.Where(p => p.paymentDate.Date == targetDate);
+            }
+
+            if (!string.IsNullOrWhiteSpace(paymentType))
+            {
+                var method = paymentType.Trim();
+                query = query.Where(p => p.paymentType == method);
+            }
+
+            if (planId.HasValue)
+            {
+                query = query.Where(p =>
+                    p.Membership != null && p.Membership.planId == planId.Value);
             }
 
             var items = await query
@@ -67,12 +83,33 @@ namespace GymCrudApp.Services
                 .Where(i => !i.IsVoided)
                 .Sum(i => i.Amount);
 
+            var paymentTypes = new[] { "Cash", "GCash", "Maya", "Bank Transfer", "Card" };
+            var plans = await _context.MembershipPlans
+                .AsNoTracking()
+                .OrderBy(p => p.planName)
+                .Select(p => new { p.planId, p.planName })
+                .ToListAsync();
+
             return new PaymentIndexViewModel
             {
                 Payments = items,
                 MemberSearch = memberSearch,
                 FilterDate = filterDate,
-                TotalValidAmount = totalValid
+                PaymentType = paymentType,
+                PlanId = planId,
+                TotalValidAmount = totalValid,
+                PaymentTypeOptions = paymentTypes.Select(t => new SelectListItem
+                {
+                    Value = t,
+                    Text = t,
+                    Selected = string.Equals(t, paymentType, StringComparison.OrdinalIgnoreCase)
+                }),
+                PlanOptions = plans.Select(p => new SelectListItem
+                {
+                    Value = p.planId.ToString(),
+                    Text = p.planName,
+                    Selected = planId == p.planId
+                })
             };
         }
 
@@ -118,12 +155,16 @@ namespace GymCrudApp.Services
                 .Select(m => new { m.memberId, Display = $"{m.fullName} ({m.userEmail})" })
                 .ToListAsync();
 
-            var plans = await _context.MembershipPlans
+            var planRows = await _context.MembershipPlans
                 .AsNoTracking()
                 .Where(p => p.isActive)
                 .OrderBy(p => p.planPrice)
-                .Select(p => new { p.planId, Display = $"{p.planName} - {p.durationDays} days ({p.planPrice:N2})" })
+                .Select(p => new { p.planId, p.planName, p.durationDays, p.planPrice })
                 .ToListAsync();
+
+            var plans = planRows
+                .Select(p => new { p.planId, Display = $"{p.planName} · ₱{p.planPrice:N0}" })
+                .ToList();
 
             var staffMembers = await _context.Staff
                 .AsNoTracking()
@@ -161,7 +202,14 @@ namespace GymCrudApp.Services
                 RecordedByStaffId = defaultStaffId,
                 Members = new SelectList(members, "memberId", "Display", preselectedMemberId),
                 Plans = new SelectList(plans, "planId", "Display"),
-                StaffList = new SelectList(staffMembers, "StaffID", "Display", defaultStaffId)
+                StaffList = new SelectList(staffMembers, "StaffID", "Display", defaultStaffId),
+                PlanChoices = planRows.Select(p => new PaymentPlanChoiceViewModel
+                {
+                    PlanId = p.planId,
+                    PlanName = p.planName,
+                    DurationDays = p.durationDays,
+                    PlanPrice = p.planPrice
+                }).ToList()
             };
         }
 

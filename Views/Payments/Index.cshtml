@@ -2,94 +2,158 @@
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Payments";
-    var hasFilter = !string.IsNullOrWhiteSpace(Model.MemberSearch) || Model.FilterDate.HasValue;
+    var hasFilter = !string.IsNullOrWhiteSpace(Model.MemberSearch)
+        || Model.FilterDate.HasValue
+        || !string.IsNullOrWhiteSpace(Model.PaymentType)
+        || Model.PlanId.HasValue;
+    var periodLabel = Model.FilterDate.HasValue
+        ? Model.FilterDate.Value.ToString("MMM d, yyyy")
+        : DateTime.Today.ToString("MMMM yyyy");
 }
 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Payments</h1>
-        <p class="fx-muted">@Model.Payments.Count @(Model.Payments.Count == 1 ? "payment" : "payments") · @FlexifyUi.Peso(Model.TotalValidAmount) total (voided not counted)</p>
-    </div>
-    <div class="fx-row">
-        <a asp-controller="ReceiptOcr" asp-action="Upload" class="fx-btn fx-btn--outline">Scan receipt (OCR)</a>
-        <a asp-action="Create" class="fx-btn fx-btn--primary">+ Record payment</a>
-    </div>
-</header>
+<div class="fx-min fx-payments">
+    @* Title + period, and the two entry points for new payments *@
+    <header class="fx-page-head">
+        <div>
+            <h1>Payments</h1>
+            <p class="fx-muted">@periodLabel</p>
+        </div>
+        <div class="fx-row">
+            <a asp-controller="ReceiptOcr" asp-action="Upload" class="fx-btn fx-btn--ghost">Scan receipt</a>
+            <a asp-action="Create" class="fx-btn fx-btn--primary">Record payment</a>
+        </div>
+    </header>
 
-<form asp-action="Index" method="get" class="fx-search-bar" role="search">
-    <div class="fx-field">
-        <label class="fx-label" for="memberSearch">Member</label>
-        <input type="text" id="memberSearch" name="memberSearch" value="@Model.MemberSearch" class="fx-input" placeholder="Name or email" />
-    </div>
-    <div class="fx-field">
-        <label class="fx-label" for="filterDate">Date</label>
-        <input type="date" id="filterDate" name="filterDate" value="@Model.FilterDate?.ToString("yyyy-MM-dd")" class="fx-input" />
-    </div>
-    <button type="submit" class="fx-btn fx-btn--primary">Filter</button>
-    @if (hasFilter)
-    {
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Clear</a>
-    }
-</form>
-
-<div class="fx-table-wrap">
-    <table class="fx-table">
-        <thead>
-            <tr>
-                <th scope="col">Member</th>
-                <th scope="col">Date</th>
-                <th scope="col">Method</th>
-                <th scope="col">Amount</th>
-                <th scope="col">Status</th>
-                <th scope="col"><span class="visually-hidden">Actions</span></th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (!Model.Payments.Any())
+    @* Filters auto-apply on change; search waits briefly while typing *@
+    <form asp-action="Index" method="get" id="paymentsFilterForm" class="fx-search-bar fx-payments__toolbar" role="search">
+        <label class="visually-hidden" for="memberSearch">Search member</label>
+        <div class="fx-members__search-field fx-payments__search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input type="text" id="memberSearch" name="memberSearch" value="@Model.MemberSearch" class="fx-input" placeholder="Search member" autocomplete="off" />
+        </div>
+        <label class="visually-hidden" for="filterDate">Date</label>
+        <input type="date" id="filterDate" name="filterDate" value="@Model.FilterDate?.ToString("yyyy-MM-dd")" class="fx-input fx-pay-date" />
+        <label class="visually-hidden" for="paymentType">Method</label>
+        <select id="paymentType" name="paymentType" class="fx-select fx-payments__select" aria-label="Payment method">
+            <option value="">All methods</option>
+            @foreach (var opt in Model.PaymentTypeOptions)
             {
-                <tr><td colspan="6" class="fx-table__empty">@(hasFilter ? "No payments match this filter." : "No payments recorded yet.")</td></tr>
+                <option value="@opt.Value" selected="@opt.Selected">@opt.Text</option>
             }
-            else
+        </select>
+        <label class="visually-hidden" for="planId">Plan</label>
+        <select id="planId" name="planId" class="fx-select fx-payments__select" aria-label="Membership plan">
+            <option value="">All plans</option>
+            @foreach (var opt in Model.PlanOptions)
             {
-                @foreach (var p in Model.Payments)
+                <option value="@opt.Value" selected="@opt.Selected">@opt.Text</option>
+            }
+        </select>
+        @if (hasFilter)
+        {
+            <a asp-action="Index" class="fx-btn fx-btn--ghost">Clear</a>
+        }
+    </form>
+
+    @* Columns match the prototype: date, member, plan, method, reference, recorded by, amount *@
+    <div class="fx-table-wrap">
+        <table class="fx-table fx-payments__table">
+            <thead>
+                <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Member</th>
+                    <th scope="col">Plan</th>
+                    <th scope="col">Method</th>
+                    <th scope="col">Reference no.</th>
+                    <th scope="col">Recorded by</th>
+                    <th scope="col" class="fx-num">Amount</th>
+                    <th scope="col" class="fx-th-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Payments.Any())
                 {
-                    <tr>
-                        <td>
-                            <strong>@p.MemberName</strong>
-                            <span class="fx-sub">@p.PlanName</span>
-                        </td>
-                        <td>@p.PaymentDate.ToString("MMM d, yyyy")</td>
-                        <td>
-                            @p.PaymentType
-                            @if (!string.IsNullOrWhiteSpace(p.ReferenceNumber))
-                            {
-                                <span class="fx-sub">@p.ReferenceNumber</span>
-                            }
-                        </td>
-                        <td>@FlexifyUi.Peso(p.Amount)</td>
-                        <td>
-                            @if (p.IsVoided)
-                            {
-                                <span class="fx-badge fx-badge--overdue">Voided</span>
-                            }
-                            else
-                            {
-                                <span class="fx-badge fx-badge--active">Paid</span>
-                            }
-                        </td>
-                        <td>
-                            <div class="fx-table__actions">
-                                <a asp-action="Details" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View payment by @p.MemberName">View</a>
-                                @if (!p.IsVoided)
-                                {
-                                    <a asp-action="Edit" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--outline fx-btn--sm" aria-label="Edit payment by @p.MemberName">Edit</a>
-                                    <a asp-action="Void" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Void payment by @p.MemberName">Void</a>
-                                }
-                            </div>
-                        </td>
-                    </tr>
+                    <tr><td colspan="8" class="fx-table__empty">@(hasFilter ? "No payments match this filter." : "No payments recorded yet.")</td></tr>
                 }
-            }
-        </tbody>
-    </table>
+                else
+                {
+                    @foreach (var p in Model.Payments)
+                    {
+                        <tr class="@(p.IsVoided ? "is-void" : null)">
+                            <td>@p.PaymentDate.ToString("MMM d")</td>
+                            <td>@p.MemberName</td>
+                            <td>@p.PlanName</td>
+                            <td>@p.PaymentType</td>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(p.ReferenceNumber))
+                                {
+                                    <span class="fx-muted">—</span>
+                                }
+                                else
+                                {
+                                    @p.ReferenceNumber
+                                }
+                            </td>
+                            <td>@p.RecordedByStaffName</td>
+                            <td class="fx-num">@FlexifyUi.Peso(p.Amount)</td>
+                            <td>
+                                <div class="fx-table__actions">
+                                    @if (p.IsVoided)
+                                    {
+                                        <span class="fx-badge fx-badge--neutral">Voided</span>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Details" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View payment by @p.MemberName">View</a>
+                                        <a asp-action="Edit" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="Edit payment by @p.MemberName">Edit</a>
+                                        <a asp-action="Void" asp-route-id="@p.PaymentId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Void payment by @p.MemberName">Void</a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* Total sits under the table, same wording as the prototype *@
+    <div class="fx-payments__footer">
+        <span>Total (excluding voided): <b>@FlexifyUi.Peso(Model.TotalValidAmount)</b></span>
+        @if (hasFilter)
+        {
+            <a asp-action="Index" class="fx-btn fx-btn--ghost fx-btn--sm">Show all</a>
+        }
+    </div>
 </div>
+
+@section Scripts {
+<script>
+(() => {
+  const form = document.getElementById('paymentsFilterForm');
+  if (!form) return;
+
+  const submit = () => {
+    // Drop empty fields so the URL stays clean
+    for (const el of form.querySelectorAll('input, select')) {
+      if (!el.name) continue;
+      if ((el.value || '').trim() === '') el.disabled = true;
+    }
+    form.requestSubmit ? form.requestSubmit() : form.submit();
+  };
+
+  let timer = null;
+  const search = form.querySelector('#memberSearch');
+  if (search) {
+    search.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(submit, 350);
+    });
+  }
+
+  for (const el of form.querySelectorAll('#filterDate, #paymentType, #planId')) {
+    el.addEventListener('change', submit);
+  }
+})();
+</script>
+}

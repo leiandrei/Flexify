@@ -6,7 +6,11 @@ namespace GymCrudApp.Services
 {
     public interface IPaymentService
     {
-        Task<PaymentIndexViewModel> GetFilteredAsync(string? memberSearch, DateTime? filterDate);
+        Task<PaymentIndexViewModel> GetFilteredAsync(
+            string? memberSearch,
+            DateTime? filterDate,
+            string? paymentType = null,
+            int? planId = null);
         Task<PaymentDetailsViewModel?> GetByIdAsync(int id);
         Task<PaymentCreateViewModel> BuildCreateViewModelAsync(int? preselectedMemberId = null, string? currentUserEmail = null);
         Task<PaymentEditViewModel?> GetForEditAsync(int id);

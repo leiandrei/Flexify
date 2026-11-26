@@ -1,81 +1,175 @@
 ﻿@model GymCrudApp.ViewModels.Payments.PaymentCreateViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Record Payment";
-    var paymentTypes = new[] { "Cash", "GCash", "Maya", "Bank Transfer", "Card" };
+    ViewData["Title"] = "Sell a plan";
+    var methods = new[] { "Cash", "GCash", "Maya", "Card", "Bank Transfer" };
 }
- 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Sell a plan &amp; record payment</h1>
-        <p class="fx-muted">This creates the member's new membership and saves the payment together.</p>
+
+<div class="fx-min fx-sale">
+    <header class="fx-page-head">
+        <div>
+            <nav class="fx-crumbs" aria-label="Breadcrumb">
+                <a asp-action="Index">Payments</a>
+                <span aria-hidden="true"> / </span>
+                <span>New</span>
+            </nav>
+            <h1>Sell a plan</h1>
+            <p class="fx-muted">Creates the membership and the payment together.</p>
+        </div>
+    </header>
+
+    <div class="fx-split fx-sale__split">
+        <form asp-action="Create" method="post" class="fx-form fx-split__main" id="saleForm">
+            <div asp-validation-summary="ModelOnly"></div>
+
+            <div class="fx-field">
+                <label asp-for="MemberId" class="fx-label">Member</label>
+                <select asp-for="MemberId" asp-items="Model.Members" class="fx-select" id="saleMember">
+                    <option value="">Choose a member</option>
+                </select>
+                <span asp-validation-for="MemberId" class="fx-error"></span>
+            </div>
+
+            <div class="fx-field">
+                <label asp-for="PlanId" class="fx-label">Plan</label>
+                <select asp-for="PlanId" class="fx-select" id="salePlan">
+                    <option value="">Choose a plan</option>
+                    @foreach (var plan in Model.PlanChoices)
+                    {
+                        <option value="@plan.PlanId"
+                                data-name="@plan.PlanName"
+                                data-days="@plan.DurationDays"
+                                data-price="@plan.PlanPrice.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                selected="@(Model.PlanId == plan.PlanId)">
+                            @plan.PlanName · @FlexifyUi.Peso(plan.PlanPrice)
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="PlanId" class="fx-error"></span>
+            </div>
+
+            <div class="fx-field">
+                <label asp-for="StartDate" class="fx-label">Start date</label>
+                <input asp-for="StartDate" type="date" class="fx-input" id="saleStart" />
+                <span asp-validation-for="StartDate" class="fx-error"></span>
+            </div>
+
+            <div class="fx-field">
+                <label asp-for="Amount" class="fx-label">Amount</label>
+                <input asp-for="Amount" class="fx-input fx-sale__amount" id="saleAmount" step="0.01" min="0.01" readonly />
+                <span class="fx-hint">From plan price</span>
+                <span asp-validation-for="Amount" class="fx-error"></span>
+            </div>
+
+            <fieldset class="fx-field fx-sale__methods">
+                <legend class="fx-label">Payment method</legend>
+                <div class="fx-segmented" role="radiogroup" aria-label="Payment method">
+                    @foreach (var method in methods)
+                    {
+                        var id = "method-" + method.Replace(" ", "-");
+                        <label for="@id">
+                            <input type="radio" asp-for="PaymentType" value="@method" id="@id" />
+                            @(method == "Bank Transfer" ? "Bank" : method)
+                        </label>
+                    }
+                </div>
+                <span asp-validation-for="PaymentType" class="fx-error"></span>
+            </fieldset>
+
+            <div class="fx-field">
+                <label asp-for="ReferenceNumber" class="fx-label">Reference number</label>
+                <input asp-for="ReferenceNumber" class="fx-input" placeholder="Optional for cash" />
+                <span class="fx-hint">For GCash, Maya, card and bank</span>
+                <span asp-validation-for="ReferenceNumber" class="fx-error"></span>
+            </div>
+
+            <div class="fx-field">
+                <label asp-for="PaymentDate" class="fx-label">Payment date</label>
+                <input asp-for="PaymentDate" type="date" class="fx-input" />
+                <span asp-validation-for="PaymentDate" class="fx-error"></span>
+            </div>
+
+            <div class="fx-field">
+                <label asp-for="RecordedByStaffId" class="fx-label">Recorded by</label>
+                <select asp-for="RecordedByStaffId" asp-items="Model.StaffList" class="fx-select">
+                    <option value="">Choose staff</option>
+                </select>
+                <span asp-validation-for="RecordedByStaffId" class="fx-error"></span>
+            </div>
+
+            <div class="fx-form__actions">
+                <button type="submit" class="fx-btn fx-btn--primary">Save payment</button>
+                <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+            </div>
+        </form>
+
+        <aside class="fx-sale__summary" aria-label="Summary">
+            <h2>Summary</h2>
+            <dl class="fx-sale__dl">
+                <dt>Member</dt><dd id="sumMember">—</dd>
+                <dt>Plan</dt><dd id="sumPlan">—</dd>
+                <dt>Runs</dt><dd id="sumRuns">—</dd>
+                <dt>Method</dt><dd id="sumMethod">—</dd>
+                <dt>Amount</dt><dd id="sumAmount"><b>—</b></dd>
+            </dl>
+        </aside>
     </div>
-</header>
- 
-<form asp-action="Create" method="post" class="fx-card fx-form fx-narrow">
-    <div asp-validation-summary="ModelOnly"></div>
- 
-    <div class="fx-field">
-        <label asp-for="MemberId" class="fx-label"></label>
-        <select asp-for="MemberId" asp-items="Model.Members" class="fx-select">
-            <option value="">Choose a member</option>
-        </select>
-        <span asp-validation-for="MemberId" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="PlanId" class="fx-label"></label>
-        <select asp-for="PlanId" asp-items="Model.Plans" class="fx-select">
-            <option value="">Choose a plan</option>
-        </select>
-        <span asp-validation-for="PlanId" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="StartDate" class="fx-label"></label>
-        <input asp-for="StartDate" class="fx-input" />
-        <span asp-validation-for="StartDate" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="Amount" class="fx-label"></label>
-        <input asp-for="Amount" class="fx-input" step="0.01" min="0.01" />
-        <span asp-validation-for="Amount" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="PaymentType" class="fx-label"></label>
-        <select asp-for="PaymentType" asp-items="@(new SelectList(paymentTypes))" class="fx-select"></select>
-        <span asp-validation-for="PaymentType" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="ReferenceNumber" class="fx-label"></label>
-        <input asp-for="ReferenceNumber" class="fx-input" placeholder="e.g. GCASH-20261122-001" />
-        <span asp-validation-for="ReferenceNumber" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="PaymentDate" class="fx-label"></label>
-        <input asp-for="PaymentDate" class="fx-input" />
-        <span asp-validation-for="PaymentDate" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="RecordedByStaffId" class="fx-label"></label>
-        <select asp-for="RecordedByStaffId" asp-items="Model.StaffList" class="fx-select">
-            <option value="">Choose staff</option>
-        </select>
-        <span asp-validation-for="RecordedByStaffId" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-form__actions">
-        <button type="submit" class="fx-btn fx-btn--primary">Save payment</button>
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-    </div>
-</form>
- 
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+    (() => {
+      const member = document.getElementById('saleMember');
+      const plan = document.getElementById('salePlan');
+      const start = document.getElementById('saleStart');
+      const amount = document.getElementById('saleAmount');
+      const form = document.getElementById('saleForm');
+      if (!member || !plan || !start || !amount || !form) return;
+
+      const peso = (n) => '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      const sync = () => {
+        const memOpt = member.options[member.selectedIndex];
+        const planOpt = plan.options[plan.selectedIndex];
+        const method = form.querySelector('input[name="PaymentType"]:checked');
+
+        const memberLabel = member.value ? (memOpt?.text || '—').replace(/\s*\(.*\)$/, '') : '—';
+        document.getElementById('sumMember').textContent = memberLabel;
+
+        const days = Number(planOpt?.dataset.days || 0);
+        const price = Number(planOpt?.dataset.price || 0);
+        const planName = planOpt?.dataset.name || '';
+        if (plan.value && planName) {
+          document.getElementById('sumPlan').textContent = `${planName}, ${days} day${days === 1 ? '' : 's'}`;
+          amount.value = price.toFixed(2);
+          document.getElementById('sumAmount').innerHTML = `<b>${peso(price)}</b>`;
+        } else {
+          document.getElementById('sumPlan').textContent = '—';
+          document.getElementById('sumAmount').innerHTML = '<b>—</b>';
+        }
+
+        if (plan.value && start.value) {
+          const from = new Date(start.value + 'T00:00:00');
+          const to = new Date(from);
+          to.setDate(to.getDate() + days);
+          document.getElementById('sumRuns').textContent = `${fmt(from)} → ${fmt(to)}`;
+        } else {
+          document.getElementById('sumRuns').textContent = '—';
+        }
+
+        const methodLabel = method?.value === 'Bank Transfer' ? 'Bank' : (method?.value || '—');
+        document.getElementById('sumMethod').textContent = methodLabel;
+      };
+
+      member.addEventListener('change', sync);
+      plan.addEventListener('change', sync);
+      start.addEventListener('change', sync);
+      for (const r of form.querySelectorAll('input[name="PaymentType"]')) {
+        r.addEventListener('change', sync);
+      }
+      sync();
+    })();
+    </script>
 }
- 

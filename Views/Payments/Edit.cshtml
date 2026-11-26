@@ -1,54 +1,80 @@
 ﻿@model GymCrudApp.ViewModels.Payments.PaymentEditViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Edit Payment";
-    var paymentTypes = new[] { "Cash", "GCash", "Maya", "Bank Transfer", "Card" };
+    ViewData["Title"] = "Edit payment";
+    var methods = new[] { "Cash", "GCash", "Maya", "Card", "Bank Transfer" };
 }
- 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Edit payment</h1>
-        <p class="fx-muted">@Model.MemberName · @Model.PlanName</p>
-    </div>
-</header>
- 
-<form asp-action="Edit" method="post" class="fx-card fx-form fx-narrow">
-    <input type="hidden" asp-for="PaymentId" />
-    <input type="hidden" asp-for="MemberName" />
-    <input type="hidden" asp-for="PlanName" />
-    <div asp-validation-summary="ModelOnly"></div>
- 
-    <div class="fx-field">
-        <label asp-for="Amount" class="fx-label"></label>
-        <input asp-for="Amount" class="fx-input" step="0.01" min="0.01" />
-        <span asp-validation-for="Amount" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="PaymentType" class="fx-label"></label>
-        <select asp-for="PaymentType" asp-items="@(new SelectList(paymentTypes))" class="fx-select"></select>
-        <span asp-validation-for="PaymentType" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="ReferenceNumber" class="fx-label"></label>
-        <input asp-for="ReferenceNumber" class="fx-input" />
-        <span asp-validation-for="ReferenceNumber" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="PaymentDate" class="fx-label"></label>
-        <input asp-for="PaymentDate" class="fx-input" />
-        <span asp-validation-for="PaymentDate" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-form__actions">
-        <button type="submit" class="fx-btn fx-btn--primary">Update payment</button>
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-    </div>
-</form>
- 
+
+<div class="fx-min fx-edit-page">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Payments</a>
+        <span aria-hidden="true"> / </span>
+        <span>Edit</span>
+    </nav>
+
+    <header class="fx-page-head">
+        <div>
+            <h1>Edit payment</h1>
+            <p class="fx-muted">@Model.MemberName · @Model.PlanName · @Model.PaymentDate.ToString("MMM d, yyyy")</p>
+        </div>
+    </header>
+
+    <form asp-action="Edit" method="post" class="fx-form fx-form--wide">
+        <input type="hidden" asp-for="PaymentId" />
+        <input type="hidden" asp-for="MemberName" />
+        <input type="hidden" asp-for="PlanName" />
+        <div asp-validation-summary="ModelOnly" class="fx-field--full"></div>
+
+        <div class="fx-field">
+            <label asp-for="Amount" class="fx-label">Amount (₱)</label>
+            <input asp-for="Amount" class="fx-input" step="0.01" min="0.01" />
+            <span asp-validation-for="Amount" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="PaymentDate" class="fx-label">Payment date</label>
+            <input asp-for="PaymentDate" class="fx-input" type="date" />
+            <span asp-validation-for="PaymentDate" class="fx-error"></span>
+        </div>
+
+        <fieldset class="fx-field fx-field--full fx-sale__methods">
+            <legend class="fx-label">Payment method</legend>
+            <div class="fx-segmented">
+                @foreach (var method in methods)
+                {
+                    var id = "payType_" + method.Replace(" ", "");
+                    var label = method == "Bank Transfer" ? "Bank" : method;
+                    <label for="@id">
+                        @if (Model.PaymentType == method)
+                        {
+                            <input type="radio" name="PaymentType" id="@id" value="@method" checked="checked" />
+                        }
+                        else
+                        {
+                            <input type="radio" name="PaymentType" id="@id" value="@method" />
+                        }
+                        @label
+                    </label>
+                }
+            </div>
+            <span asp-validation-for="PaymentType" class="fx-error"></span>
+        </fieldset>
+
+        <div class="fx-field fx-field--full">
+            <label asp-for="ReferenceNumber" class="fx-label">Reference number</label>
+            <input asp-for="ReferenceNumber" class="fx-input" />
+            <span class="fx-hint">For GCash, Maya, card and bank.</span>
+            <span asp-validation-for="ReferenceNumber" class="fx-error"></span>
+        </div>
+
+        <div class="fx-form__actions fx-field--full">
+            <button type="submit" class="fx-btn fx-btn--primary">Save changes</button>
+            <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
+            <a asp-action="Void" asp-route-id="@Model.PaymentId" class="fx-btn fx-btn--danger-outline">Void payment</a>
+        </div>
+    </form>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
- 

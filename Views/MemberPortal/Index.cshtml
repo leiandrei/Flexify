@@ -1,133 +1,262 @@
 ﻿@model GymCrudApp.ViewModels.MemberPortal.MemberPortalViewModel
 @{
     Layout = "_MemberLayout";
-    ViewData["Title"] = "My Membership";
+    ViewData["Title"] = "My membership";
+    var firstName = Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? Model.FullName;
+    int? usedDays = null;
+    int? totalDays = Model.PlanDurationDays;
+    int? usedPercent = null;
+    if (Model.StartDate.HasValue && Model.ExpiryDate.HasValue)
+    {
+        var span = (Model.ExpiryDate.Value - Model.StartDate.Value).TotalDays;
+        if (span > 0)
+        {
+            totalDays ??= (int)Math.Round(span);
+            usedDays = (int)Math.Clamp(Math.Round(span - Model.DaysRemaining), 0, totalDays.Value);
+            usedPercent = (int)Math.Clamp(Math.Round(usedDays.Value * 100.0 / totalDays.Value), 0, 100);
+        }
+    }
+    var pillClass = Model.MembershipStatus switch
+    {
+        "Active" => "is-active",
+        "Expiring" => "is-expiring",
+        "Expired" => "is-expired",
+        _ => "is-inactive"
+    };
+    var daysLabel = Model.DaysRemaining == 1 ? "day left" : "days left";
 }
 
-<header class="fx-member__top">
-    <div class="fx-list-row">
-        <span class="fx-avatar" aria-hidden="true">@FlexifyUi.Initials(Model.FullName)</span>
-        <div class="fx-list-row__body">
-            <strong>Hi, @Model.FullName</strong>
-            <span>@Model.Email</span>
+<div class="fx-portal">
+    <header class="fx-page-head">
+        <div>
+            <h1>Hi, @firstName</h1>
+            <p class="fx-muted">@DateTime.Today.ToString("dddd, MMMM d, yyyy")</p>
         </div>
-    </div>
-    <a asp-controller="Home" asp-action="Index" class="fx-btn fx-btn--ghost fx-btn--sm">&larr; Home page</a>
-</header>
+    </header>
 
-<div class="fx-member__body">
-
-    @* 1. Membership card *@
-    <section class="fx-member-card" aria-labelledby="card-heading">
-        <div class="fx-member-card__head">
-            <span class="fx-member-card__type" id="card-heading">@(Model.PlanName ?? "No plan yet")</span>
-            <span class="@FlexifyUi.StatusBadge(Model.MembershipStatus)">@Model.MembershipStatus</span>
+    <section class="fx-portal__status" aria-label="Membership status">
+        <div>
+            <span class="fx-members__pill @pillClass">@Model.MembershipStatus</span>
+            @if (Model.ExpiryDate.HasValue)
+            {
+                <p class="fx-portal__days">@Model.DaysRemaining<span>@daysLabel</span></p>
+            }
+            else
+            {
+                <p class="fx-portal__days">—<span>no plan yet</span></p>
+            }
         </div>
-        <div class="fx-member-card__id">Member #@Model.MemberId</div>
+        <dl class="fx-dl">
+            <dt>Plan</dt>
+            <dd>
+                @if (!string.IsNullOrWhiteSpace(Model.PlanName))
+                {
+                    @Model.PlanName
+                    @if (Model.PlanPrice.HasValue && Model.PlanDurationDays.HasValue)
+                    {
+                        <text> · @FlexifyUi.Peso(Model.PlanPrice.Value) / @Model.PlanDurationDays days</text>
+                    }
+                }
+                else
+                {
+                    <text>No plan yet</text>
+                }
+            </dd>
+            <dt>Started</dt>
+            <dd>@(Model.StartDate?.ToString("MMM d, yyyy") ?? "—")</dd>
+            <dt>Ends</dt>
+            <dd>@(Model.ExpiryDate?.ToString("MMM d, yyyy") ?? "—")</dd>
+        </dl>
+        @if (usedPercent.HasValue)
+        {
+            <div class="fx-portal__used" role="img" aria-label="@usedDays of @totalDays days used">
+                <span style="width:@usedPercent%"></span>
+            </div>
+            <p class="fx-muted fx-portal__used-note">
+                @usedDays of @totalDays days used.
+                @if (Model.MembershipStatus is "Active" or "Expiring")
+                {
+                    <text> Renew at the front desk before @Model.ExpiryDate!.Value.ToString("MMM d").</text>
+                }
+                else if (Model.MembershipStatus == "Expired")
+                {
+                    <text> Visit the front desk to renew.</text>
+                }
+            </p>
+        }
+        else if (!Model.ExpiryDate.HasValue)
+        {
+            <p class="fx-muted fx-portal__used-note">You don’t have a membership yet. Pick a plan below, then pay at the front desk.</p>
+        }
     </section>
 
-    @* 2. Days remaining and dates *@
-    @if (Model.ExpiryDate.HasValue)
-    {
-        <section class="fx-stat @(Model.MembershipStatus == "Active" ? "" : "fx-stat--warn")" aria-label="Days remaining">
-            <span class="fx-stat__label">Days remaining</span>
-            <span class="fx-stat__value">@Model.DaysRemaining</span>
-            <span class="fx-stat__hint">
-                @(Model.StartDate?.ToString("MMM d, yyyy")) to @Model.ExpiryDate.Value.ToString("MMM d, yyyy")
-            </span>
-        </section>
-    }
-    else
-    {
-        <div class="fx-alert fx-alert--warn" role="status">
-            You don't have a membership yet. Visit the front desk to choose a plan.
+    <section class="fx-section" id="payments" aria-labelledby="pay-h">
+        <div class="fx-section__head">
+            <h2 id="pay-h">Payment history</h2>
+            <span class="fx-muted" style="font-size:13px">@Model.Payments.Count @(Model.Payments.Count == 1 ? "payment" : "payments")</span>
         </div>
-    }
+        <div class="fx-members__table-wrap">
+            <table class="fx-members__table">
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Plan</th>
+                        <th scope="col">Method</th>
+                        <th scope="col">Reference</th>
+                        <th scope="col" class="fx-num">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Payments.Any())
+                    {
+                        <tr><td colspan="5" class="fx-table__empty">No payments yet.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var p in Model.Payments)
+                        {
+                            <tr class="@(p.IsVoided ? "is-void" : null)">
+                                <td>@p.PaymentDate.ToString("MMM d, yyyy")</td>
+                                <td>@p.PlanName</td>
+                                <td>@p.PaymentType</td>
+                                <td>@(string.IsNullOrWhiteSpace(p.ReferenceNumber) ? "—" : p.ReferenceNumber)</td>
+                                <td class="fx-num">
+                                    @if (p.IsVoided)
+                                    {
+                                        <span class="fx-badge fx-badge--overdue">Voided</span>
+                                    }
+                                    else
+                                    {
+                                        @FlexifyUi.Peso(p.Amount)
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-    @* 3. Payment history *@
-    <section class="fx-card" aria-labelledby="payments-heading">
-        <div class="fx-card__head">
-            <h2 id="payments-heading">Payment history</h2>
+    <section class="fx-section" id="visits" aria-labelledby="vis-h">
+        <div class="fx-section__head">
+            <h2 id="vis-h">Gym visits</h2>
+            <span class="fx-muted" style="font-size:13px">@Model.VisitsThisMonth this month</span>
         </div>
-        @if (Model.Payments.Any())
+        <div class="fx-members__table-wrap">
+            <table class="fx-members__table">
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Checked in</th>
+                        <th scope="col">Checked out</th>
+                        <th scope="col" class="fx-num">Time spent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.AttendanceLogs.Any())
+                    {
+                        <tr><td colspan="4" class="fx-table__empty">No visits recorded yet.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var a in Model.AttendanceLogs.Take(12))
+                        {
+                            var isToday = a.CheckIn.Date == DateTime.Today;
+                            <tr>
+                                <td>@(isToday ? "Today" : a.CheckIn.ToString("MMM d"))</td>
+                                <td>@a.CheckIn.ToString("h:mm tt")</td>
+                                <td>
+                                    @if (!a.CheckOut.HasValue)
+                                    {
+                                        <span class="fx-members__pill is-active">On the floor</span>
+                                    }
+                                    else
+                                    {
+                                        @a.CheckOut.Value.ToString("h:mm tt")
+                                    }
+                                </td>
+                                <td class="fx-num">@a.DurationDisplay</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="fx-section" id="plans" aria-labelledby="plans-h">
+        <div class="fx-section__head">
+            <h2 id="plans-h">Membership plans</h2>
+            <span class="fx-muted" style="font-size:13px">Ask at the front desk to start or switch</span>
+        </div>
+        @if (!Model.AvailablePlans.Any())
         {
-            <div class="fx-kv-list">
-                @foreach (var p in Model.Payments)
-                {
-                    <div class="fx-kv">
-                        <div class="fx-list-row__body">
-                            <strong>@p.PlanName</strong>
-                            <span>@p.PaymentDate.ToString("MMM d, yyyy") · @p.PaymentType @(p.ReferenceNumber != null ? "· " + p.ReferenceNumber : "")</span>
-                        </div>
-                        @if (p.IsVoided)
-                        {
-                            <span class="fx-badge fx-badge--overdue">Voided</span>
-                        }
-                        else
-                        {
-                            <strong>@FlexifyUi.Peso(p.Amount)</strong>
-                        }
-                    </div>
-                }
-            </div>
+            <p class="fx-muted">No plans are published right now.</p>
         }
         else
         {
-            <p class="fx-muted">No payments yet.</p>
-        }
-    </section>
-
-    @* 4. Attendance history *@
-    <section class="fx-card" aria-labelledby="attendance-heading">
-        <div class="fx-card__head">
-            <h2 id="attendance-heading">Gym visits</h2>
-        </div>
-        @if (Model.AttendanceLogs.Any())
-        {
-            <div class="fx-kv-list">
-                @foreach (var a in Model.AttendanceLogs)
+            var defaultPlan = Model.AvailablePlans.FirstOrDefault(p => p.IsCurrent) ?? Model.AvailablePlans.First();
+            var defaultAction = defaultPlan.IsCurrent
+                ? (Model.MembershipStatus is "Expiring" or "Expired" ? "Renew at the front desk" : "Your current plan")
+                : (Model.MembershipStatus is "No Membership" or "Expired" or "Inactive"
+                    ? "Ask the front desk to start this plan"
+                    : "Ask the front desk to switch");
+            <div class="fx-plans" id="portalPlanPicker" style="--n:@Model.AvailablePlans.Count">
+                @foreach (var plan in Model.AvailablePlans)
                 {
-                    <div class="fx-kv">
-                        <div class="fx-list-row__body">
-                            <strong>@a.CheckIn.ToString("ddd, MMM d")</strong>
-                            <span>
-                                In @a.CheckIn.ToString("h:mm tt")
-                                @if (a.CheckOut.HasValue)
-                                {
-                                    <text>· Out @a.CheckOut.Value.ToString("h:mm tt")</text>
-                                }
-                            </span>
-                        </div>
-                        <span class="fx-list-row__time">@a.DurationDisplay</span>
-                    </div>
+                    var pressed = plan.PlanId == defaultPlan.PlanId;
+                    var action = plan.IsCurrent
+                        ? (Model.MembershipStatus is "Expiring" or "Expired" ? "Renew at the front desk" : "Your current plan")
+                        : (Model.MembershipStatus is "No Membership" or "Expired" or "Inactive"
+                            ? "Ask the front desk to start this plan"
+                            : "Ask the front desk to switch");
+                    <button type="button"
+                            class="fx-plan"
+                            aria-pressed="@(pressed ? "true" : "false")"
+                            data-n="@plan.PlanName"
+                            data-p="@FlexifyUi.Peso(plan.PlanPrice)"
+                            data-current="@(plan.IsCurrent ? "1" : "0")"
+                            data-action="@action">
+                        <span class="fx-plan__n">
+                            @plan.PlanName
+                            @if (plan.IsCurrent)
+                            {
+                                <span class="fx-plan__tag">Current</span>
+                            }
+                        </span>
+                        <span class="fx-plan__p">@FlexifyUi.Peso(plan.PlanPrice)</span>
+                        <span class="fx-plan__d">@plan.DurationDays @(plan.DurationDays == 1 ? "day" : "days")</span>
+                        <span class="fx-plan__x">@(string.IsNullOrWhiteSpace(plan.PlanDescription) ? "Full gym floor access." : plan.PlanDescription)</span>
+                    </button>
                 }
             </div>
-        }
-        else
-        {
-            <p class="fx-muted">No visits recorded yet.</p>
+            <div class="fx-pick-row fx-pick-row--portal">
+                <p class="fx-muted">
+                    Selected:
+                    <b id="portalPlanSel" style="color:var(--fx-ink)">@defaultPlan.PlanName · @FlexifyUi.Peso(defaultPlan.PlanPrice)</b>
+                </p>
+                <span class="fx-btn fx-btn--primary" id="portalPlanAction" aria-disabled="true">@defaultAction</span>
+            </div>
+            <p class="fx-muted" style="font-size:13px">
+                Staff record the payment and activate the plan the same day. Use Ask Flexify if you have a pricing question.
+            </p>
         }
     </section>
-
 </div>
 
-<style>
-    @@media (min-width: 900px) {
-        .fx-member {
-            max-width: 960px;
-        }
-
-        .fx-member__body {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            align-items: start;
-            align-content: start;
-        }
-
-        .fx-bottom-nav {
-            max-width: none;
-            padding-inline: max(8px, calc((100vw - 960px) / 2));
-        }
-    }
-</style>
- 
+@section Scripts {
+<script>
+(() => {
+  const buttons = document.querySelectorAll('#portalPlanPicker .fx-plan');
+  const sel = document.getElementById('portalPlanSel');
+  const action = document.getElementById('portalPlanAction');
+  if (!buttons.length || !sel || !action) return;
+  buttons.forEach(btn => btn.addEventListener('click', () => {
+    buttons.forEach(o => o.setAttribute('aria-pressed', o === btn ? 'true' : 'false'));
+    sel.textContent = `${btn.dataset.n} · ${btn.dataset.p}`;
+    action.textContent = btn.dataset.action || 'Ask at the front desk';
+  }));
+})();
+</script>
+}

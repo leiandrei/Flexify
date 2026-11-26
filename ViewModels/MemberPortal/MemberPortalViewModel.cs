@@ -10,16 +10,29 @@ namespace GymCrudApp.ViewModels.MemberPortal
         public string Email { get; set; } = string.Empty;
         public string ContactNumber { get; set; } = string.Empty;
 
-        // Current / Latest Subscription Summary
+        public int? CurrentPlanId { get; set; }
         public string? PlanName { get; set; }
-        public string MembershipStatus { get; set; } = "No Membership"; // Active, Expiring, Expired, Inactive, No Membership
+        public decimal? PlanPrice { get; set; }
+        public int? PlanDurationDays { get; set; }
+        public string MembershipStatus { get; set; } = "No Membership";
         public int DaysRemaining { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? ExpiryDate { get; set; }
+        public int VisitsThisMonth { get; set; }
 
-        // Scoped Histories (signed-in member only)
         public List<MemberPaymentHistoryItemViewModel> Payments { get; set; } = new();
         public List<MemberAttendanceHistoryItemViewModel> AttendanceLogs { get; set; } = new();
+        public List<MemberPortalPlanItemViewModel> AvailablePlans { get; set; } = new();
+    }
+
+    public class MemberPortalPlanItemViewModel
+    {
+        public int PlanId { get; set; }
+        public string PlanName { get; set; } = string.Empty;
+        public decimal PlanPrice { get; set; }
+        public int DurationDays { get; set; }
+        public string PlanDescription { get; set; } = string.Empty;
+        public bool IsCurrent { get; set; }
     }
 
     public class MemberPaymentHistoryItemViewModel
@@ -43,9 +56,9 @@ namespace GymCrudApp.ViewModels.MemberPortal
         {
             get
             {
-                if (!CheckOut.HasValue) return "In Gym";
+                if (!CheckOut.HasValue) return "—";
                 var span = CheckOut.Value - CheckIn;
-                return $"{(int)span.TotalHours}h {span.Minutes}m";
+                return $"{(int)span.TotalHours}h {span.Minutes:D2}m";
             }
         }
     }

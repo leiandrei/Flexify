@@ -6,55 +6,64 @@
     var activeCount = staffList.Count(s => s.IsActive);
 }
 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Staff</h1>
-        <p class="fx-muted">@staffList.Count @(staffList.Count == 1 ? "staff member" : "staff members") · @activeCount active</p>
-    </div>
-    <a asp-action="Create" class="fx-btn fx-btn--primary">+ New staff</a>
-</header>
+<div class="fx-min">
+    @* Title, staff counts, add button *@
+    <header class="fx-page-head">
+        <div>
+            <h1>Staff</h1>
+            <p class="fx-muted">@staffList.Count @(staffList.Count == 1 ? "staff member" : "staff members") · @activeCount active</p>
+        </div>
+        <a asp-action="Create" class="fx-btn fx-btn--primary">New staff</a>
+    </header>
 
-<div class="fx-table-wrap">
-    <table class="fx-table">
-        <thead>
-            <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Position</th>
-                <th scope="col">Date of birth</th>
-                <th scope="col">Status</th>
-                <th scope="col"><span class="visually-hidden">Actions</span></th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (!staffList.Any())
-            {
-                <tr><td colspan="5" class="fx-table__empty">No staff accounts recorded yet.</td></tr>
-            }
-            else
-            {
-                @foreach (var s in staffList)
+    @* Staff list: name with email, position, birth date, status, actions *@
+    <div class="fx-table-wrap">
+        <table class="fx-table">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Position</th>
+                    <th scope="col">Date of birth</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="fx-th-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!staffList.Any())
                 {
-                    var statusLabel = s.IsActive ? "Active" : "Inactive";
-                    <tr>
-                        <td>
-                            <strong>@s.FullName</strong>
-                            <span class="fx-sub">@s.Email</span>
-                        </td>
-                        <td>@s.Position</td>
-                        <td>@s.DateOfBirth.ToString("MMM d, yyyy")</td>
-                        <td>
-                            <span class="@FlexifyUi.StatusBadge(statusLabel)">@statusLabel</span>
-                        </td>
-                        <td>
-                            <div class="fx-table__actions">
-                                <a asp-action="Details" asp-route-id="@s.StaffID" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View @s.FullName">View</a>
-                                <a asp-action="Edit" asp-route-id="@s.StaffID" class="fx-btn fx-btn--outline fx-btn--sm" aria-label="Edit @s.FullName">Edit</a>
-                                <a asp-action="Delete" asp-route-id="@s.StaffID" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete @s.FullName">Delete</a>
-                            </div>
-                        </td>
-                    </tr>
+                    <tr><td colspan="5" class="fx-table__empty">No staff accounts recorded yet.</td></tr>
                 }
-            }
-        </tbody>
-    </table>
+                else
+                {
+                    @foreach (var s in staffList)
+                    {
+                        var statusLabel = s.IsActive ? "Active" : "Inactive";
+                        <tr>
+                            <td>
+                                <div class="fx-list-row">
+                                    <span class="fx-avatar @(s.IsActive ? "" : "fx-avatar--neutral")" aria-hidden="true">@FlexifyUi.Initials(s.FullName)</span>
+                                    <div class="fx-list-row__body">
+                                        <strong>@s.FullName</strong>
+                                        <span>@s.Email</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@s.Position</td>
+                            <td style="white-space:nowrap">@s.DateOfBirth.ToString("MMM d, yyyy")</td>
+                            <td>
+                                <span class="@FlexifyUi.StatusBadge(statusLabel)">@statusLabel</span>
+                            </td>
+                            <td>
+                                <div class="fx-table__actions">
+                                    <a asp-action="Details" asp-route-id="@s.StaffID" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View @s.FullName">View</a>
+                                    <a asp-action="Edit" asp-route-id="@s.StaffID" class="fx-btn fx-btn--outline fx-btn--sm" aria-label="Edit @s.FullName">Edit</a>
+                                    <a asp-action="Delete" asp-route-id="@s.StaffID" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete @s.FullName">Delete</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
 </div>

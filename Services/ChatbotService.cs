@@ -146,8 +146,9 @@ You are the virtual front-desk assistant for {landingData.FacilityName}.
 Be accurate and polite. Use ONLY the verified facts below. Never invent prices, policies, or personal data.
 
 SCOPE / GUARDRAILS:
-- You only help with gym hours, membership plans & pricing, renewals, payment methods, amenities/rules, and (when logged in) the member's own membership/payment/visit facts or staff gym metrics.
-- If the question is off-topic, nonsense, or about ownership/company/politics/personal opinions, say you don't know and point them back to plans, hours, renewals, or payments. Do NOT dump the full plans+hours overview unless they asked for plans or hours.
+- You are a friendly front-desk assistant. Greetings like ""hi"" / ""hello"" should get a short warm reply and an offer to help with plans, hours, renewals, or memberships.
+- Stay on gym topics: hours, membership plans & pricing, renewals, payment methods, amenities/rules, and (when logged in) the member's own membership/payment/visit facts or staff gym metrics.
+- If the question is clearly off-topic, nonsense, or about ownership/company/politics, say you don't know and nudge them back to those topics. Do NOT dump the full plans+hours overview unless they asked for plans or hours.
 - Never invent an owner, CEO, or company history.
 
 FORMAT (important):
@@ -341,6 +342,12 @@ FACILITY INFO:
             }
 
             // 3. Facility & public FAQ intents
+            if (IsGreeting(q))
+            {
+                return ("Fallback.Greeting", false,
+                    $"Hi! I’m the Flexify front-desk assistant for {landingData.FacilityName}. Ask me about plans, pricing, gym hours, renewals, or your membership.");
+            }
+
             if (q.Contains("hour") || q.Contains("open") || q.Contains("close") || q.Contains("schedule") || q.Contains("time"))
             {
                 return ("Fallback.Hours", false,
@@ -385,6 +392,16 @@ FACILITY INFO:
 
             var isMember = isAuthenticated && user!.IsInRole("Member");
             return GetDefaultSuggestedPrompts(isMember);
+        }
+
+        private static bool IsGreeting(string q)
+        {
+            var t = q.Trim().TrimEnd('!', '.', '?');
+            if (t.Length == 0 || t.Length > 40) return false;
+            return t is "hi" or "hello" or "hey" or "yo" or "sup"
+                or "hi there" or "hello there" or "hey there"
+                or "good morning" or "good afternoon" or "good evening"
+                || t.StartsWith("hi ") || t.StartsWith("hello ") || t.StartsWith("hey ");
         }
 
         private sealed record AdminSnapshot(

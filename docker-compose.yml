@@ -34,7 +34,8 @@ services:
       ConnectionStrings__DefaultConnection: "Server=db,1433;Database=GymCrudDb;User Id=sa;Password=${DB_PASSWORD:-FlexifyStrongPass!2026};TrustServerCertificate=True;MultipleActiveResultSets=true;"
       Llm__ApiKey: "${LLM_API_KEY:-}"
       Llm__BaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/"
-      Llm__Model: "gemini-3.8-flash"
+      Llm__Model: "gemini-3.1-flash-lite"
+      Llm__FallbackModel: "gemini-3.8-flash"
       Llm__TimeoutSeconds: "15"
     volumes:
       - flexify_uploads:/app/wwwroot/uploads

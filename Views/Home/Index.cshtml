@@ -1,37 +1,40 @@
 ﻿@model GymCrudApp.ViewModels.Home.LandingPageViewModel
 @{
     ViewData["Title"] = "Gym membership, simplified";
+    ViewData["PublicShellClass"] = "fx-public--landing";
     Layout = "_PublicLayout";
     var signedIn = User.Identity?.IsAuthenticated == true;
     var defaultPlan = Model.Plans.FirstOrDefault(p => p.PlanName.Contains("Monthly", StringComparison.OrdinalIgnoreCase))
         ?? Model.Plans.FirstOrDefault();
+    var heroLines = Model.HeroTitle
+        .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }
 
 <div class="fx-landing">
-    <div class="fx-wrap">
-        <section class="fx-landing__hero">
+    <section class="fx-landing__hero" aria-label="Hero">
+        <div class="fx-landing__hero-bg" aria-hidden="true">
+            <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=2000&q=80"
+                 alt=""
+                 width="2000"
+                 height="1200"
+                 loading="eager" />
+        </div>
+        <div class="fx-landing__hero-veil" aria-hidden="true"></div>
+        <div class="fx-wrap fx-landing__hero-inner">
             <div class="fx-landing__copy">
                 <p class="fx-landing__brand">Flexify</p>
                 <h1 class="fx-landing__display">
-                    @{
-                        var heroLines = Model.HeroTitle
-                            .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                    }
                     @for (var i = 0; i < heroLines.Length; i++)
                     {
-                        @(heroLines[i] + ".")
-                        if (i < heroLines.Length - 1)
-                        {
-                            <br />
-                        }
+                        <span class="fx-landing__line">@(heroLines[i] + ".")</span>
                     }
                 </h1>
                 <p class="fx-landing__lead">@Model.HeroSubtitle</p>
                 <div class="fx-row fx-landing__cta">
                     @if (!signedIn)
                     {
-                        <a class="fx-btn fx-btn--primary fx-btn--lg" href="#plans">See membership plans</a>
-                        <a class="fx-btn fx-btn--ghost fx-btn--lg" asp-controller="Account" asp-action="Register">Become a member</a>
+                        <a class="fx-btn fx-btn--primary fx-btn--lg" href="#amenities">See what’s inside</a>
+                        <a class="fx-btn fx-btn--ghost-light fx-btn--lg" href="#plans">View plans</a>
                     }
                     else if (User.IsInRole("Admin"))
                     {
@@ -47,34 +50,114 @@
                     }
                 </div>
             </div>
-            <figure class="fx-landing__media">
-                <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1400&q=80"
-                     alt="People training with free weights on a gym floor"
-                     width="1400"
-                     height="1050"
-                     loading="eager" />
-            </figure>
+        </div>
+    </section>
+
+    <div class="fx-wrap">
+        <section id="amenities" class="fx-landing__block" aria-labelledby="amenities-h">
+            <header class="fx-landing__sec-head">
+                <p class="fx-landing__eyebrow">Included with every plan</p>
+                <h2 id="amenities-h">Amenities</h2>
+                <p class="fx-muted">The day-to-day extras that make training easier — not upsells at the door.</p>
+            </header>
+            <div class="fx-amenity-grid">
+                <article class="fx-amenity">
+                    <svg class="fx-amenity__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6.5 9.5v5M17.5 9.5v5M4 11v2M20 11v2M6.5 12h11M8.5 8.5v7M15.5 8.5v7" />
+                    </svg>
+                    <h3>Full free-weight floor</h3>
+                    <p>Racks, platforms, and dumbbells ready when you are — no waiting for a club roster.</p>
+                </article>
+                <article class="fx-amenity">
+                    <svg class="fx-amenity__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="7" r="3" />
+                        <path d="M6 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1" />
+                        <circle cx="18" cy="9" r="2" />
+                    </svg>
+                    <h3>Staff on the floor</h3>
+                    <p>Front desk and coaches for check-ins, renewals, and quick form help.</p>
+                </article>
+                <article class="fx-amenity">
+                    <svg class="fx-amenity__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 7v5l3 2" />
+                    </svg>
+                    <h3>Long open hours</h3>
+                    <p>@Model.OperatingHours — train before work or after dinner.</p>
+                </article>
+                <article class="fx-amenity">
+                    <svg class="fx-amenity__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 14c0 2 1.8 4 4 4s4-2 4-4" />
+                        <path d="M9 10c.4-1.2 1.5-2 3-2s2.6.8 3 2" />
+                        <path d="M12 18v2" />
+                        <path d="M10 4h4" />
+                    </svg>
+                    <h3>Lockers &amp; showers</h3>
+                    <p>Day-use lockers, showers, and member Wi‑Fi so you can go straight from the floor.</p>
+                </article>
+            </div>
         </section>
 
-        <section class="fx-landing__benefits" aria-label="What’s included">
-            <div>
-                <h2>Full gym floor access</h2>
-                <p>Free weights, machines, and cardio — every paid plan includes the floor.</p>
-            </div>
-            <div>
-                <h2>Know your days left</h2>
-                <p>Your portal shows plan status, payments, and visits without carrying a card.</p>
-            </div>
-            <div>
-                <h2>Pay at the desk</h2>
-                <p>Cash, GCash, Maya, card, or bank transfer. Staff activate you the same day.</p>
+        <section id="facilities" class="fx-landing__block" aria-labelledby="facilities-h">
+            <header class="fx-landing__sec-head">
+                <p class="fx-landing__eyebrow">Inside the gym</p>
+                <h2 id="facilities-h">Facilities</h2>
+                <p class="fx-muted">Three zones built for real sessions — weights, cardio, and class floor.</p>
+            </header>
+            <div class="fx-facility-grid">
+                <article class="fx-facility">
+                    <div class="fx-facility__tape" aria-hidden="true"></div>
+                    <figure class="fx-facility__media">
+                        <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80"
+                             alt="Barbells and squat racks on a free-weight floor"
+                             width="900" height="680" loading="lazy" />
+                    </figure>
+                    <div class="fx-facility__body">
+                        <div>
+                            <h3>Free-weight floor</h3>
+                            <p>Squat racks, platforms, and dumbbells for strength work without a waitlist.</p>
+                        </div>
+                        <span class="fx-facility__tag">Zone A</span>
+                    </div>
+                </article>
+                <article class="fx-facility">
+                    <div class="fx-facility__tape" aria-hidden="true"></div>
+                    <figure class="fx-facility__media">
+                        <img src="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=900&q=80"
+                             alt="Treadmills and cardio machines in a bright gym"
+                             width="900" height="680" loading="lazy" />
+                    </figure>
+                    <div class="fx-facility__body">
+                        <div>
+                            <h3>Cardio deck</h3>
+                            <p>Treadmills, bikes, and rowers for warm-ups, finishers, or full cardio days.</p>
+                        </div>
+                        <span class="fx-facility__tag">Zone B</span>
+                    </div>
+                </article>
+                <article class="fx-facility">
+                    <div class="fx-facility__tape" aria-hidden="true"></div>
+                    <figure class="fx-facility__media">
+                        <img src="https://images.unsplash.com/photo-1540497077202-7c8a3999166f?auto=format&fit=crop&w=900&q=80"
+                             alt="Group training area with open floor space"
+                             width="900" height="680" loading="lazy" />
+                    </figure>
+                    <div class="fx-facility__body">
+                        <div>
+                            <h3>Class &amp; HIIT floor</h3>
+                            <p>Open space for group HIIT, spin, and mobility — included on Pro and Elite plans.</p>
+                        </div>
+                        <span class="fx-facility__tag">Zone C</span>
+                    </div>
+                </article>
             </div>
         </section>
 
-        <section id="plans" aria-label="Choose a plan">
-            <header class="fx-landing__plans-head">
-                <h2>Membership plans</h2>
-                <p class="fx-muted">Pick by how often you train. Each card lists what’s included — pay at the front desk to start.</p>
+        <section id="plans" class="fx-landing__block" aria-label="Choose a plan">
+            <header class="fx-landing__sec-head">
+                <p class="fx-landing__eyebrow">Membership</p>
+                <h2>Plans</h2>
+                <p class="fx-muted">Pick by how often you train. Pay at the front desk to start — this app doesn’t take payments online.</p>
             </header>
             @if (!Model.Plans.Any())
             {
@@ -150,11 +233,11 @@
             </div>
             @if (User.IsInRole("Admin") || User.IsInRole("Staff"))
             {
-                <a class="fx-btn fx-btn--ghost fx-btn--lg" asp-controller="@(User.IsInRole("Admin") ? "AdminDashboard" : "Members")" asp-action="Index">Open staff tools</a>
+                <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="@(User.IsInRole("Admin") ? "AdminDashboard" : "Members")" asp-action="Index">Open staff tools</a>
             }
             else
             {
-                <a class="fx-btn fx-btn--ghost fx-btn--lg" asp-controller="Account" asp-action="Login">See the staff dashboard</a>
+                <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Account" asp-action="Login">See the staff dashboard</a>
             }
         </div>
     </section>

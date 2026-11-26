@@ -45,7 +45,7 @@ namespace GymCrudApp.Services
 
             var configuredModel = _configuration["Llm:Model"];
             var primaryModel = string.IsNullOrWhiteSpace(configuredModel)
-                ? "gemini-3.8-flash"
+                ? "gemini-3.1-flash-lite"
                 : configuredModel.Trim();
 
             var fallbackModel = _configuration["Llm:FallbackModel"]?.Trim();

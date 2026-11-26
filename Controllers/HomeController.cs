@@ -19,6 +19,7 @@ namespace GymCrudApp.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
+            ViewData["PublicShellClass"] = "fx-public--landing";
             var vm = await _landingPageService.GetLandingPageDataAsync();
             return View(vm);
         }

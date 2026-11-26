@@ -2,6 +2,7 @@
     var signedIn = User.Identity?.IsAuthenticated == true;
     var isStaffSide = User.IsInRole("Admin") || User.IsInRole("Staff");
     var isMember = User.IsInRole("Member");
+    var shellClass = ViewData["PublicShellClass"] as string;
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -17,7 +18,7 @@
     <link rel="stylesheet" href="~/GymCrudApp.styles.css" asp-append-version="true" />
 </head>
 <body class="fx">
-<div class="fx-public">
+<div class="fx-public @shellClass">
     <header class="fx-top">
         <div class="fx-wrap fx-top__inner">
             <a class="fx-brand fx-top__brand" asp-controller="Home" asp-action="Index">
@@ -25,6 +26,8 @@
             </a>
             <div class="fx-top__end">
                 <nav class="fx-top__nav" aria-label="Site">
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="amenities">Amenities</a>
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="facilities">Facilities</a>
                     <a asp-controller="Home" asp-action="Index" asp-fragment="plans">Plans</a>
                     <a asp-controller="Home" asp-action="Index" asp-fragment="owners">For gym owners</a>
                     @if (signedIn)

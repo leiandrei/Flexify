@@ -1,0 +1,59 @@
+@{
+    var navText = ViewData["AuthNavText"] as string ?? "Log in";
+    var navAction = ViewData["AuthNavAction"] as string ?? "Login";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Flexify</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/GymCrudApp.styles.css" asp-append-version="true" />
+</head>
+<body class="fx">
+<div class="fx-auth-page">
+    <header class="fx-top">
+        <div class="fx-wrap fx-top__inner">
+            <a class="fx-brand fx-top__brand" asp-controller="Home" asp-action="Index">
+                <partial name="_FxBrand" />
+            </a>
+            <div class="fx-top__end">
+                <nav class="fx-top__nav" aria-label="Account">
+                    <a asp-controller="Account" asp-action="@navAction">@navText</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="fx-auth-page__body">
+        @if (TempData.Peek("SuccessMessage") != null || TempData.Peek("WarningMessage") != null || TempData.Peek("ErrorMessage") != null)
+        {
+            <div class="fx-auth-page__alerts">
+                <partial name="_FxAlerts" />
+            </div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="fx-foot">
+        <div class="fx-wrap fx-foot__inner">
+            <span>&copy; 2026 Flexify</span>
+            <nav class="fx-foot__nav" aria-label="Footer">
+                <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+                <a asp-controller="Home" asp-action="Index">Back to home</a>
+            </nav>
+        </div>
+    </footer>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

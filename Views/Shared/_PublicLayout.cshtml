@@ -18,58 +18,66 @@
 </head>
 <body class="fx">
 <div class="fx-public">
-    <header class="fx-topbar">
-        <div class="fx-container fx-topbar__inner">
-            <a class="fx-brand" asp-controller="Home" asp-action="Index">
+    <header class="fx-top">
+        <div class="fx-wrap fx-top__inner">
+            <a class="fx-brand fx-top__brand" asp-controller="Home" asp-action="Index">
                 <partial name="_FxBrand" />
             </a>
-            <nav class="fx-topnav" aria-label="Site">
-                <a asp-controller="Home" asp-action="Index">Home</a>
-                @if (signedIn)
+            <div class="fx-top__end">
+                <nav class="fx-top__nav" aria-label="Site">
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="plans">Plans</a>
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="owners">For gym owners</a>
+                    @if (signedIn)
+                    {
+                        @if (isStaffSide)
+                        {
+                            <a asp-controller="@(User.IsInRole("Admin") ? "AdminDashboard" : "Members")" asp-action="Index">Dashboard</a>
+                        }
+                        else if (isMember)
+                        {
+                            <a asp-controller="MemberPortal" asp-action="Index">My portal</a>
+                        }
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login">Log in</a>
+                    }
+                </nav>
+                @if (!signedIn)
                 {
-                    <a asp-controller="Home" asp-action="Privacy">Privacy</a>
-                    @if (isStaffSide)
-                    {
-                        <a class="fx-btn fx-btn--outline fx-btn--sm" asp-controller="Members" asp-action="Index">Go to dashboard</a>
-                    }
-                    else if (isMember)
-                    {
-                        <a class="fx-btn fx-btn--outline fx-btn--sm" asp-controller="MemberPortal" asp-action="Index">My portal</a>
-                    }
-                    <form asp-controller="Account" asp-action="Logout" method="post">
-                        <button type="submit" class="fx-btn fx-btn--ghost fx-btn--sm">Log out</button>
-                    </form>
+                    <a class="fx-btn fx-btn--primary" asp-controller="Account" asp-action="Register">Join</a>
                 }
                 else
                 {
-                    <a class="fx-btn fx-btn--outline fx-btn--sm" asp-controller="Account" asp-action="Register">Register</a>
-                    <a class="fx-btn fx-btn--primary fx-btn--sm" asp-controller="Account" asp-action="Login">Log in</a>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="fx-top__logout">
+                        <button type="submit" class="fx-btn fx-btn--ghost">Log out</button>
+                    </form>
                 }
-            </nav>
+            </div>
         </div>
     </header>
 
     <main>
         @if (TempData.Peek("SuccessMessage") != null || TempData.Peek("WarningMessage") != null || TempData.Peek("ErrorMessage") != null)
         {
-            <div class="fx-container fx-stack fx-stack--sm" style="padding-top:16px">
+            <div class="fx-wrap" style="padding-top:16px">
                 <partial name="_FxAlerts" />
             </div>
         }
         @RenderBody()
     </main>
 
-    <footer class="fx-footer">
-        <div class="fx-container fx-footer__inner">
+    <footer class="fx-foot">
+        <div class="fx-wrap fx-foot__inner">
             <span>&copy; 2026 Flexify</span>
-            <span>Run your gym. Fill your gym.</span>
+            <nav class="fx-foot__nav" aria-label="Footer">
+                <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+            </nav>
         </div>
     </footer>
 </div>
 
 <partial name="_ChatbotWidget" />
-
-<script src="~/lib/jquery/dist/jquery.min.js"></script>
 
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

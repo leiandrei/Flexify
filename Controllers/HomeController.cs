@@ -23,7 +23,7 @@ namespace GymCrudApp.Controllers
             return View(vm);
         }
 
-        // No [AllowAnonymous] here: protected by FallbackPolicy
+        [AllowAnonymous]
         public IActionResult Privacy()
         {
             return View();

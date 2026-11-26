@@ -9,6 +9,8 @@ namespace GymCrudApp.Services
         Task<AttendanceIndexViewModel> GetIndexViewModelAsync(
             string? searchQuery,
             DateTime? filterDate,
+            int page = 1,
+            int pageSize = 10,
             DateTime? asOfNow = null);
 
         Task<(bool Success, string? WarningMessage, string? ErrorMessage)> CheckInAsync(

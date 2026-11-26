@@ -1,45 +1,135 @@
-﻿@{
-    ViewData["Title"] = "Home";
+﻿@model GymCrudApp.ViewModels.Home.LandingPageViewModel
+@{
+    ViewData["Title"] = "Gym membership, simplified";
+    Layout = "_PublicLayout";
     var signedIn = User.Identity?.IsAuthenticated == true;
+    var defaultPlan = Model.Plans.FirstOrDefault(p => p.PlanName.Contains("Monthly", StringComparison.OrdinalIgnoreCase))
+        ?? Model.Plans.FirstOrDefault();
 }
 
-<section class="fx-container fx-hero">
-    <span class="fx-eyebrow">Gym membership management</span>
-    <h1 class="fx-hero__title">Run your gym. <em>Fill your gym.</em></h1>
-    <p class="fx-hero__lead">
-        Flexify keeps members, plans, payments and attendance in one place, so owners and staff
-        always know who is active and members can see their own membership anytime.
-    </p>
-    <div class="fx-row">
-        @if (!signedIn)
-        {
-            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Account" asp-action="Register">Become a member</a>
-            <a class="fx-btn fx-btn--outline fx-btn--lg" asp-controller="Account" asp-action="Login">Log in</a>
-        }
-        else if (User.IsInRole("Admin") || User.IsInRole("Staff"))
-        {
-            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Members" asp-action="Index">Go to dashboard</a>
-        }
-        else if (User.IsInRole("Member"))
-        {
-            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="MemberPortal" asp-action="Index">Open my portal</a>
-        }
-    </div>
-</section>
+<div class="fx-landing">
+    <div class="fx-wrap">
+        <section class="fx-landing__hero">
+            <h1 class="fx-landing__display">
+                @{
+                    var heroLines = Model.HeroTitle
+                        .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+                @for (var i = 0; i < heroLines.Length; i++)
+                {
+                    @(heroLines[i] + ".")
+                    if (i < heroLines.Length - 1)
+                    {
+                        <br />
+                    }
+                }
+            </h1>
+            <p class="fx-landing__lead">@Model.HeroSubtitle</p>
+        </section>
 
-<section class="fx-container" style="padding-bottom:64px" aria-label="Features">
-    <div class="fx-grid-cards">
-        <div class="fx-card fx-feature">
-            <h2>Members</h2>
-            <p>Register members, search by name, email or phone, and keep every profile up to date.</p>
-        </div>
-        <div class="fx-card fx-feature">
-            <h2>Plans &amp; payments</h2>
-            <p>Set up membership plans, record payments, and renew memberships before they expire.</p>
-        </div>
-        <div class="fx-card fx-feature">
-            <h2>Attendance</h2>
-            <p>Check members in and out at the front desk and see who visited on any day.</p>
-        </div>
+        <section id="plans" aria-label="Choose a plan">
+            @if (!Model.Plans.Any())
+            {
+                <p class="fx-muted">Plans will appear here once the gym publishes them.</p>
+            }
+            else
+            {
+                <div class="fx-plans" id="planPicker" style="--n:@Model.Plans.Count">
+                    @foreach (var plan in Model.Plans)
+                    {
+                        var isDefault = defaultPlan != null && plan.PlanId == defaultPlan.PlanId;
+                        <button type="button"
+                                class="fx-plan"
+                                aria-pressed="@(isDefault ? "true" : "false")"
+                                data-id="@plan.PlanId"
+                                data-n="@plan.PlanName"
+                                data-p="@FlexifyUi.Peso(plan.PlanPrice)">
+                            <span class="fx-plan__n">@plan.PlanName</span>
+                            <span class="fx-plan__p">@FlexifyUi.Peso(plan.PlanPrice)</span>
+                            <span class="fx-plan__d">@plan.DurationDays @(plan.DurationDays == 1 ? "day" : "days")</span>
+                            <span class="fx-plan__x">@(string.IsNullOrWhiteSpace(plan.PlanDescription) ? "Full gym floor access." : plan.PlanDescription)</span>
+                        </button>
+                    }
+                </div>
+                <div class="fx-pick-row">
+                    <p class="fx-muted">
+                        Selected:
+                        <b id="planSel" style="color:var(--fx-ink)">
+                            @(defaultPlan != null
+                                ? $"{defaultPlan.PlanName} · {FlexifyUi.Peso(defaultPlan.PlanPrice)}"
+                                : "Choose a plan")
+                        </b>
+                    </p>
+                    <div class="fx-row">
+                        @if (!signedIn)
+                        {
+                            <a class="fx-btn fx-btn--ghost fx-btn--lg" asp-controller="Account" asp-action="Login">Log in</a>
+                            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Account" asp-action="Register" id="planJoin">Become a member</a>
+                        }
+                        else if (User.IsInRole("Admin"))
+                        {
+                            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="AdminDashboard" asp-action="Index">Go to dashboard</a>
+                        }
+                        else if (User.IsInRole("Staff"))
+                        {
+                            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="Members" asp-action="Index">Go to members</a>
+                        }
+                        else if (User.IsInRole("Member"))
+                        {
+                            <a class="fx-btn fx-btn--primary fx-btn--lg" asp-controller="MemberPortal" asp-action="Index">Open my portal</a>
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+
+        <section class="fx-how" aria-label="How it works">
+            <div>
+                <span class="fx-how__n">1</span>
+                <h2>Create your account</h2>
+                <p>Sign up with your Gmail address. Takes a minute.</p>
+            </div>
+            <div>
+                <span class="fx-how__n">2</span>
+                <h2>Pay at the front desk</h2>
+                <p>Cash, GCash, Maya, card or bank transfer. Staff start your plan the same day.</p>
+            </div>
+            <div>
+                <span class="fx-how__n">3</span>
+                <h2>Give your name, train</h2>
+                <p>No card to carry. Check your days left and visits in your member portal.</p>
+            </div>
+        </section>
     </div>
-</section>
+
+    <section class="fx-owners" id="owners">
+        <div class="fx-wrap fx-owners__inner">
+            <div>
+                <h2>Run a gym?</h2>
+                <p>Flexify handles members, plans, payments and check-ins for local gyms in the Philippines. This page runs on it.</p>
+            </div>
+            @if (User.IsInRole("Admin") || User.IsInRole("Staff"))
+            {
+                <a class="fx-btn fx-btn--ghost fx-btn--lg" asp-controller="@(User.IsInRole("Admin") ? "AdminDashboard" : "Members")" asp-action="Index">Open staff tools</a>
+            }
+            else
+            {
+                <a class="fx-btn fx-btn--ghost fx-btn--lg" asp-controller="Account" asp-action="Login">See the staff dashboard</a>
+            }
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+<script>
+(() => {
+  const buttons = document.querySelectorAll('#planPicker .fx-plan');
+  const sel = document.getElementById('planSel');
+  if (!buttons.length || !sel) return;
+  buttons.forEach(btn => btn.addEventListener('click', () => {
+    buttons.forEach(o => o.setAttribute('aria-pressed', o === btn ? 'true' : 'false'));
+    sel.textContent = `${btn.dataset.n} · ${btn.dataset.p}`;
+  }));
+})();
+</script>
+}

@@ -19,9 +19,13 @@ namespace GymCrudApp.Controllers
 
         // GET: /Payments
         [HttpGet]
-        public async Task<IActionResult> Index(string? memberSearch, DateTime? filterDate)
+        public async Task<IActionResult> Index(
+            string? memberSearch,
+            DateTime? filterDate,
+            string? paymentType,
+            int? planId)
         {
-            var vm = await _paymentService.GetFilteredAsync(memberSearch, filterDate);
+            var vm = await _paymentService.GetFilteredAsync(memberSearch, filterDate, paymentType, planId);
             return View(vm);
         }
 
@@ -53,6 +57,7 @@ namespace GymCrudApp.Controllers
                 model.Members = reloaded.Members;
                 model.Plans = reloaded.Plans;
                 model.StaffList = reloaded.StaffList;
+                model.PlanChoices = reloaded.PlanChoices;
                 return View(model);
             }
 
@@ -64,6 +69,7 @@ namespace GymCrudApp.Controllers
                 model.Members = reloaded.Members;
                 model.Plans = reloaded.Plans;
                 model.StaffList = reloaded.StaffList;
+                model.PlanChoices = reloaded.PlanChoices;
                 return View(model);
             }
 

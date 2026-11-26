@@ -34,6 +34,8 @@ namespace GymCrudApp.Services
 
             return new LandingPageViewModel
             {
+                HeroTitle = "Show up. Train hard. Stay ready.",
+                HeroSubtitle = "A simple plan for people who just want to work out. Always know your days left from your phone.",
                 Plans = activePlans
             };
         }

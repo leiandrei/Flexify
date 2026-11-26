@@ -3,80 +3,256 @@
     Layout = "_AdminLayout";
     ViewData["Title"] = "Dashboard";
     var maxCheckIns = Model.DailyCheckInCounts.Any() ? Math.Max(1, Model.DailyCheckInCounts.Max()) : 1;
-}
- 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Dashboard</h1>
-        <p class="fx-muted">As of @Model.AsOfDate.ToString("dddd, MMM d, yyyy")</p>
-    </div>
-</header>
- 
-@* 1. Number cards *@
-<section class="fx-grid-stats" aria-label="Key numbers">
-    <a asp-controller="Members" asp-action="Index" class="fx-stat">
-        <span class="fx-stat__label">Active members</span>
-        <span class="fx-stat__value">@Model.ActiveMembersCount</span>
-        <span class="fx-stat__hint">View members</span>
-    </a>
-    <div class="fx-stat @(Model.ExpiringIn7DaysCount > 0 ? "fx-stat--warn" : "")">
-        <span class="fx-stat__label">Expiring in 7 days</span>
-        <span class="fx-stat__value">@Model.ExpiringIn7DaysCount</span>
-        <span class="fx-stat__hint">Remind them to renew</span>
-    </div>
-    <a asp-controller="Payments" asp-action="Index" class="fx-stat">
-        <span class="fx-stat__label">Revenue this month</span>
-        <span class="fx-stat__value">@FlexifyUi.Peso(Model.RevenueThisMonth)</span>
-        <span class="fx-stat__hint">View payments</span>
-    </a>
-    <a asp-controller="Attendance" asp-action="Index" class="fx-stat">
-        <span class="fx-stat__label">Check-ins today</span>
-        <span class="fx-stat__value">@Model.CheckInsTodayCount</span>
-        <span class="fx-stat__hint">View attendance</span>
-    </a>
-    <div class="fx-stat">
-        <span class="fx-stat__label">New members this month</span>
-        <span class="fx-stat__value">@Model.NewMembersThisMonthCount</span>
-        <span class="fx-stat__hint fx-stat__hint--up">This month</span>
-    </div>
-</section>
- 
-@* 2. Check-ins for the last 7 days *@
-<section class="fx-card" aria-labelledby="checkins-heading">
-    <div class="fx-card__head">
-        <h2 id="checkins-heading">Check-ins, last 7 days</h2>
-    </div>
-    @if (Model.DailyCheckInCounts.Any())
+    var checkInsTotal = Model.DailyCheckInCounts.Sum();
+    var monthName = Model.AsOfDate.ToString("MMMM");
+    var floorHint = Model.OnFloorCount == 1 ? "1 on the floor" : $"{Model.OnFloorCount} on the floor";
+    var maxRevenue = Model.MonthlyRevenueTotals.Any() ? Math.Max(1m, Model.MonthlyRevenueTotals.Max()) : 1m;
+    var checkInAria = string.Join(", ", Enumerable.Range(0, Model.DailyCheckInCounts.Count)
+        .Select(i => $"{(i < Model.DailyCheckInLabels.Count ? Model.DailyCheckInLabels[i] : "?")} {Model.DailyCheckInCounts[i]}"));
+    var revenueAria = string.Join(", ", Enumerable.Range(0, Model.MonthlyRevenueTotals.Count)
+        .Select(i => $"{(i < Model.MonthlyRevenueLabels.Count ? Model.MonthlyRevenueLabels[i] : "?")} {FlexifyUi.Peso(Model.MonthlyRevenueTotals[i])}"));
+    var planMixAria = string.Join(", ", Model.PlanMix.Select(p => $"{p.PlanName} {p.Count}"));
+    string ShortPeso(decimal amount) =>
+        amount >= 1000m ? $"₱{(amount / 1000m):0.#}k" : FlexifyUi.Peso(amount);
+    string? RevenueDelta()
     {
-        <div class="fx-bars">
-            @for (int i = 0; i < Model.DailyCheckInCounts.Count; i++)
+        if (!Model.RevenueChangePercent.HasValue) return null;
+        var pct = Model.RevenueChangePercent.Value;
+        var prevLabel = Model.MonthlyRevenueLabels.Count >= 2
+            ? Model.MonthlyRevenueLabels[^2]
+            : "prior month";
+        return pct == 0 ? $"Flat vs {prevLabel}"
+            : pct > 0 ? $"↑ {pct:0}% vs {prevLabel}"
+            : $"↓ {Math.Abs(pct):0}% vs {prevLabel}";
+    }
+    var revenueDelta = RevenueDelta();
+}
+
+<div class="fx-dash">
+    <header class="fx-page-head">
+        <div>
+            <h1>Dashboard</h1>
+            <p class="fx-muted">@Model.AsOfDate.ToString("dddd, MMMM d, yyyy")</p>
+        </div>
+        <div class="fx-page-head__actions">
+            <a asp-controller="Attendance" asp-action="Index" class="fx-btn fx-btn--ghost">Check someone in</a>
+            <a asp-controller="Members" asp-action="Create" class="fx-btn fx-btn--primary">Register member</a>
+        </div>
+    </header>
+
+    <section class="fx-kpis" style="--n:5" aria-label="Key numbers">
+        <a class="fx-kpi" asp-controller="Members" asp-action="Index">
+            <span>Active members</span>
+            <b>@Model.ActiveMembersCount</b>
+            <small>View members</small>
+        </a>
+        <a class="fx-kpi @(Model.ExpiringIn7DaysCount > 0 ? "fx-kpi--warn" : null)"
+           asp-controller="Memberships" asp-action="Index">
+            <span>Expiring in 7 days</span>
+            <b>@Model.ExpiringIn7DaysCount</b>
+            <small>Remind to renew</small>
+        </a>
+        <a class="fx-kpi" asp-controller="Payments" asp-action="Index">
+            <span>Revenue, @monthName</span>
+            <b>@FlexifyUi.Peso(Model.RevenueThisMonth)</b>
+            <small>Excludes voided</small>
+        </a>
+        <a class="fx-kpi" asp-controller="Attendance" asp-action="Index">
+            <span>Check-ins today</span>
+            <b>@Model.CheckInsTodayCount</b>
+            <small>@floorHint</small>
+        </a>
+        <div class="fx-kpi">
+            <span>New this month</span>
+            <b>@Model.NewMembersThisMonthCount</b>
+            <small>Since @Model.AsOfDate.ToString("MMM") 1</small>
+        </div>
+    </section>
+
+    <div class="fx-dash__charts fx-section">
+        <section aria-labelledby="rev-h">
+            <div class="fx-section__head">
+                <h2 id="rev-h">Revenue, last 6 months</h2>
+                @if (revenueDelta != null)
+                {
+                    <span class="fx-muted" style="font-size:13px">@revenueDelta</span>
+                }
+            </div>
+            @if (Model.MonthlyRevenueTotals.Any())
             {
-                var count = Model.DailyCheckInCounts[i];
-                var isToday = i == Model.DailyCheckInCounts.Count - 1;
-                <div class="fx-bar @(isToday ? "fx-bar--today" : "")">
-                    <span class="fx-bar__value">@count</span>
-                    <div class="fx-bar__fill" style="height:@(count * 100 / maxCheckIns)%"></div>
-                    <span class="fx-bar__label">@(i < Model.DailyCheckInLabels.Count ? Model.DailyCheckInLabels[i] : "")</span>
+                <div class="fx-dash-bars" role="img" aria-label="Revenue: @revenueAria">
+                    @for (var i = 0; i < Model.MonthlyRevenueTotals.Count; i++)
+                    {
+                        var total = Model.MonthlyRevenueTotals[i];
+                        var pct = (int)Math.Round(total * 100m / maxRevenue);
+                        var isCurrent = i == Model.MonthlyRevenueTotals.Count - 1;
+                        <div class="@(isCurrent ? "is-today" : null)" data-v="@ShortPeso(total)">
+                            <span style="height:@(Math.Max(pct, total > 0 ? 4 : 0))%"></span>
+                        </div>
+                    }
+                </div>
+                <div class="fx-dash-days">
+                    @foreach (var label in Model.MonthlyRevenueLabels)
+                    {
+                        <span>@label</span>
+                    }
                 </div>
             }
-        </div>
-    }
-    else
-    {
-        <p class="fx-muted">No check-in data yet.</p>
-    }
-</section>
- 
-@* 3. Quick links *@
-<section class="fx-card" aria-labelledby="links-heading">
-    <div class="fx-card__head">
-        <h2 id="links-heading">Quick links</h2>
+            else
+            {
+                <p class="fx-muted">No revenue data yet.</p>
+            }
+        </section>
+
+        <section aria-labelledby="mix-h">
+            <div class="fx-section__head">
+                <h2 id="mix-h">Plan mix</h2>
+                <span class="fx-muted" style="font-size:13px">@Model.ActiveMembersCount active</span>
+            </div>
+            @if (!Model.PlanMix.Any())
+            {
+                <p class="fx-muted">No active plans yet.</p>
+            }
+            else
+            {
+                <div class="fx-hbars" role="img" aria-label="Plan mix: @planMixAria">
+                    @foreach (var plan in Model.PlanMix)
+                    {
+                        <div class="fx-hbar">
+                            <span class="fx-hbar__label">@plan.PlanName</span>
+                            <span class="fx-hbar__val">@plan.Count · @plan.Percent%</span>
+                            <div class="fx-hbar__track"><span class="fx-hbar__fill" style="width:@plan.Percent%"></span></div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+
+        <section aria-labelledby="ci-h">
+            <div class="fx-section__head">
+                <h2 id="ci-h">Check-ins, last 7 days</h2>
+                <span class="fx-muted" style="font-size:13px">@checkInsTotal total</span>
+            </div>
+            @if (Model.DailyCheckInCounts.Any())
+            {
+                <div class="fx-dash-bars" role="img" aria-label="Check-ins: @checkInAria">
+                    @for (var i = 0; i < Model.DailyCheckInCounts.Count; i++)
+                    {
+                        var count = Model.DailyCheckInCounts[i];
+                        var pct = count * 100 / maxCheckIns;
+                        var isToday = i == Model.DailyCheckInCounts.Count - 1;
+                        <div class="@(isToday ? "is-today" : null)" data-v="@count">
+                            <span style="height:@(pct)%"></span>
+                        </div>
+                    }
+                </div>
+                <div class="fx-dash-days">
+                    @foreach (var label in Model.DailyCheckInLabels)
+                    {
+                        <span>@label</span>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="fx-muted">No check-in data yet.</p>
+            }
+        </section>
     </div>
-    <div class="fx-row">
-        <a asp-controller="Members" asp-action="Create" class="fx-btn fx-btn--primary">+ Register member</a>
-        <a asp-controller="MembershipPlans" asp-action="Index" class="fx-btn fx-btn--outline">Membership plans</a>
-        <a asp-controller="Staff" asp-action="Index" class="fx-btn fx-btn--outline">Staff</a>
-        <a asp-controller="Home" asp-action="Index" class="fx-btn fx-btn--ghost">&larr; Public home page</a>
+
+    <div class="fx-dash__lists fx-section">
+        <section aria-labelledby="exp-h">
+            <div class="fx-section__head">
+                <h2 id="exp-h">Expiring soon</h2>
+                <a asp-controller="Memberships" asp-action="Index">All memberships</a>
+            </div>
+            <div class="fx-members__table-wrap">
+                <table class="fx-members__table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Member</th>
+                            <th scope="col">Plan</th>
+                            <th scope="col">Ends</th>
+                            <th scope="col" class="fx-th-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.ExpiringSoon.Any())
+                        {
+                            <tr><td colspan="4" class="fx-table__empty">No memberships expiring in the next 7 days.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in Model.ExpiringSoon)
+                            {
+                                var pillClass = item.Status == "Expired" ? "is-expired" : "is-expiring";
+                                var endsLabel = item.Status == "Expired"
+                                    ? "Expired"
+                                    : item.DaysRemaining == 0 ? "Today"
+                                    : item.DaysRemaining == 1 ? "In 1 day"
+                                    : $"In {item.DaysRemaining} days";
+                                <tr>
+                                    <td>
+                                        <div class="fx-list-row">
+                                            <span class="fx-avatar" aria-hidden="true">@FlexifyUi.Initials(item.FullName)</span>
+                                            <div class="fx-list-row__body">
+                                                <strong>@item.FullName</strong>
+                                                <span>@(string.IsNullOrWhiteSpace(item.ContactNumber) ? "—" : item.ContactNumber)</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>@item.PlanName</td>
+                                    <td><span class="fx-members__pill @pillClass">@endsLabel</span></td>
+                                    <td>
+                                        <div class="fx-members__actions">
+                                            <a asp-controller="Renewals" asp-action="Renew" asp-route-id="@item.MemberId"
+                                               class="fx-btn fx-btn--ghost fx-btn--sm"
+                                               aria-label="Renew @item.FullName">Renew</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section aria-labelledby="pay-h">
+            <div class="fx-section__head">
+                <h2 id="pay-h">Latest payments</h2>
+                <a asp-controller="Payments" asp-action="Index">All payments</a>
+            </div>
+            <div class="fx-members__table-wrap">
+                <table class="fx-members__table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Date</th>
+                            <th scope="col">Member</th>
+                            <th scope="col">Plan</th>
+                            <th scope="col" class="fx-num">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.LatestPayments.Any())
+                        {
+                            <tr><td colspan="4" class="fx-table__empty">No payments recorded yet.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var p in Model.LatestPayments)
+                            {
+                                <tr>
+                                    <td>@p.PaymentDate.ToString("MMM d")</td>
+                                    <td>@p.MemberName</td>
+                                    <td>@p.PlanName</td>
+                                    <td class="fx-num">@FlexifyUi.Peso(p.Amount)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
-</section>
- 
+</div>

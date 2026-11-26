@@ -1,54 +1,68 @@
 @model GymCrudApp.ViewModels.Staff.StaffEditViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Edit Staff";
+    ViewData["Title"] = "Edit staff";
 }
 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Edit staff</h1>
-        <p class="fx-muted">@Model.FullName · @Model.Position</p>
-    </div>
-</header>
+<div class="fx-min fx-edit-page">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Staff</a>
+        <span aria-hidden="true"> / </span>
+        <a asp-action="Details" asp-route-id="@Model.StaffID">@Model.FullName</a>
+        <span aria-hidden="true"> / </span>
+        <span>Edit</span>
+    </nav>
 
-<form asp-action="Edit" asp-route-id="@Model.StaffID" method="post" class="fx-card fx-form fx-narrow">
-    <input type="hidden" asp-for="StaffID" />
-    <div asp-validation-summary="ModelOnly"></div>
+    <header class="fx-page-head">
+        <div>
+            <h1>Edit staff</h1>
+            <p class="fx-muted">Updates their profile and backoffice login email.</p>
+        </div>
+    </header>
 
-    <div class="fx-field">
-        <label asp-for="FullName" class="fx-label"></label>
-        <input asp-for="FullName" class="fx-input" autocomplete="name" />
-        <span asp-validation-for="FullName" class="fx-error"></span>
-    </div>
+    <form asp-action="Edit" asp-route-id="@Model.StaffID" method="post" class="fx-form fx-form--wide">
+        <input type="hidden" asp-for="StaffID" />
+        <div asp-validation-summary="ModelOnly" class="fx-field--full"></div>
 
-    <div class="fx-field">
-        <label asp-for="Email" class="fx-label"></label>
-        <input asp-for="Email" class="fx-input" autocomplete="email" />
-        <span asp-validation-for="Email" class="fx-error"></span>
-    </div>
+        <div class="fx-field fx-field--full">
+            <label asp-for="FullName" class="fx-label">Full name</label>
+            <input asp-for="FullName" class="fx-input" autocomplete="name" />
+            <span asp-validation-for="FullName" class="fx-error"></span>
+        </div>
 
-    <div class="fx-field">
-        <label asp-for="Position" class="fx-label"></label>
-        <input asp-for="Position" class="fx-input" />
-        <span asp-validation-for="Position" class="fx-error"></span>
-    </div>
+        <div class="fx-field">
+            <label asp-for="Email" class="fx-label">Email</label>
+            <input asp-for="Email" class="fx-input" type="email" autocomplete="email" />
+            <span class="fx-hint">Used to log in to the staff desk.</span>
+            <span asp-validation-for="Email" class="fx-error"></span>
+        </div>
 
-    <div class="fx-field">
-        <label asp-for="DateOfBirth" class="fx-label"></label>
-        <input asp-for="DateOfBirth" class="fx-input" />
-        <span asp-validation-for="DateOfBirth" class="fx-error"></span>
-    </div>
+        <div class="fx-field">
+            <label asp-for="Position" class="fx-label">Position</label>
+            <input asp-for="Position" class="fx-input" />
+            <span asp-validation-for="Position" class="fx-error"></span>
+        </div>
 
-    <div class="fx-check">
-        <input asp-for="IsActive" />
-        <label asp-for="IsActive"></label>
-    </div>
+        <div class="fx-field">
+            <label asp-for="DateOfBirth" class="fx-label">Date of birth</label>
+            <input asp-for="DateOfBirth" class="fx-input" type="date" />
+            <span asp-validation-for="DateOfBirth" class="fx-error"></span>
+        </div>
 
-    <div class="fx-form__actions">
-        <button type="submit" class="fx-btn fx-btn--primary">Update staff</button>
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-    </div>
-</form>
+        <div class="fx-field">
+            <div class="fx-check">
+                <input asp-for="IsActive" />
+                <label asp-for="IsActive">Active account</label>
+            </div>
+            <span class="fx-hint">Off disables backoffice sign-in.</span>
+        </div>
+
+        <div class="fx-form__actions fx-field--full">
+            <button type="submit" class="fx-btn fx-btn--primary">Save changes</button>
+            <a asp-action="Details" asp-route-id="@Model.StaffID" class="fx-btn fx-btn--ghost">Cancel</a>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

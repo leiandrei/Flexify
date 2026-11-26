@@ -1,28 +1,44 @@
 ﻿@model GymCrudApp.ViewModels.Memberships.MembershipDetailsViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Delete Membership";
+    ViewData["Title"] = "End membership";
 }
- 
-<header class="fx-page-head">
-    <h1>Delete membership</h1>
-</header>
- 
-<div class="fx-card fx-narrow">
-    <dl class="fx-kv-list">
-        <div class="fx-kv"><dt>Member</dt><dd>@Model.MemberName</dd></div>
-        <div class="fx-kv"><dt>Plan</dt><dd>@Model.PlanName</dd></div>
-        <div class="fx-kv"><dt>Dates</dt><dd>@Model.StartDate.ToString("MMM d, yyyy") to @Model.EndDate.ToString("MMM d, yyyy")</dd></div>
-        <div class="fx-kv"><dt>Status</dt><dd><span class="@FlexifyUi.StatusBadge(Model.ComputedStatus)">@Model.ComputedStatus</span></dd></div>
-    </dl>
- 
-    <div class="fx-alert fx-alert--warn">
-        Are you sure you want to delete <strong>@Model.MemberName</strong>'s @Model.PlanName membership? This can't be undone.
+
+<div class="fx-min fx-delete-page">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Memberships</a>
+        <span aria-hidden="true"> / </span>
+        <a asp-action="Details" asp-route-id="@Model.MembershipId">@Model.MemberName · @Model.PlanName</a>
+        <span aria-hidden="true"> / </span>
+        <span>End</span>
+    </nav>
+
+    <header class="fx-page-head">
+        <div class="fx-member-detail__who">
+            <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.MemberName)</span>
+            <div>
+                <h1>End @Model.PlanName for @Model.MemberName?</h1>
+            </div>
+        </div>
+        <div class="fx-page-head__actions">
+            <a asp-action="Details" asp-route-id="@Model.MembershipId" class="fx-btn fx-btn--ghost">Cancel</a>
+            <form asp-action="Delete" asp-route-id="@Model.MembershipId" method="post" class="fx-delete-page__form">
+                <button type="submit" class="fx-btn fx-btn--danger">End membership</button>
+            </form>
+        </div>
+    </header>
+
+    <p class="fx-delete-page__lede">This removes the membership record. It can’t be undone.</p>
+
+    <div class="fx-kpis" style="--n:5">
+        <div class="fx-kpi"><span>Member</span><b>@Model.MemberName</b></div>
+        <div class="fx-kpi"><span>Plan</span><b>@Model.PlanName</b></div>
+        <div class="fx-kpi"><span>Starts</span><b>@Model.StartDate.ToString("MMM d, yyyy")</b></div>
+        <div class="fx-kpi"><span>Ends</span><b>@Model.EndDate.ToString("MMM d, yyyy")</b></div>
+        <div class="fx-kpi"><span>Status</span><b>@Model.ComputedStatus</b></div>
     </div>
- 
-    <form asp-action="Delete" asp-route-id="@Model.MembershipId" method="post" class="fx-form__actions">
-        <button type="submit" class="fx-btn fx-btn--danger">Confirm delete</button>
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-    </form>
+
+    <div class="fx-alert fx-alert--warn" role="status">
+        Ending early does not refund payments already recorded.
+    </div>
 </div>
- 

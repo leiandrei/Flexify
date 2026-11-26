@@ -1,60 +1,61 @@
 @model GymCrudApp.ViewModels.Account.RegisterViewModel
 @{
-    ViewData["Title"] = "Register";
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Create your account";
+    ViewData["AuthNavText"] = "Log in";
+    ViewData["AuthNavAction"] = "Login";
 }
 
-<div class="fx-container">
-    <div class="fx-auth fx-auth--wide">
-        <div class="fx-card">
-            <div class="fx-stack fx-stack--sm">
-                <h1>Become a member</h1>
-                <p class="fx-muted">Create your account to see your membership, payments and visits.</p>
-            </div>
+<div class="fx-auth-box">
+    <h1>Create your account</h1>
+    <p class="fx-auth-box__lead">Sign up to track your membership, payments, and gym visits.</p>
 
-            <form asp-action="Register" method="post" class="fx-form">
-                <div asp-validation-summary="ModelOnly"></div>
+    <form asp-action="Register" method="post" class="fx-form fx-auth-form">
+        <div asp-validation-summary="ModelOnly"></div>
 
-                <div class="fx-field">
-                    <label asp-for="FullName" class="fx-label"></label>
-                    <input asp-for="FullName" class="fx-input" autocomplete="name" />
-                    <span asp-validation-for="FullName" class="fx-error"></span>
-                </div>
-
-                <div class="fx-field">
-                    <label asp-for="Email" class="fx-label"></label>
-                    <input asp-for="Email" class="fx-input" placeholder="name@gmail.com" autocomplete="email" />
-                    <span asp-validation-for="Email" class="fx-error"></span>
-                </div>
-
-                <div class="fx-field">
-                    <label asp-for="ContactNumber" class="fx-label"></label>
-                    <input asp-for="ContactNumber" class="fx-input" placeholder="09171234567" autocomplete="tel" />
-                    <span asp-validation-for="ContactNumber" class="fx-error"></span>
-                </div>
-
-                <div class="fx-field">
-                    <label asp-for="Birthdate" class="fx-label"></label>
-                    <input asp-for="Birthdate" class="fx-input" />
-                    <span asp-validation-for="Birthdate" class="fx-error"></span>
-                </div>
-
-                <div class="fx-field">
-                    <label asp-for="Password" class="fx-label"></label>
-                    <input asp-for="Password" class="fx-input" autocomplete="new-password" />
-                    <span asp-validation-for="Password" class="fx-error"></span>
-                </div>
-
-                <div class="fx-field">
-                    <label asp-for="ConfirmPassword" class="fx-label"></label>
-                    <input asp-for="ConfirmPassword" class="fx-input" autocomplete="new-password" />
-                    <span asp-validation-for="ConfirmPassword" class="fx-error"></span>
-                </div>
-
-                <button type="submit" class="fx-btn fx-btn--primary fx-btn--lg fx-btn--block">Create account</button>
-            </form>
+        <div class="fx-field">
+            <label asp-for="FullName" class="fx-label">Full name</label>
+            <input asp-for="FullName" class="fx-input" autocomplete="name" />
+            <span asp-validation-for="FullName" class="fx-error"></span>
         </div>
-        <p class="fx-auth__foot" style="margin-top:20px">Already have an account? <a asp-action="Login">Log in</a></p>
-    </div>
+
+        <div class="fx-field">
+            <label asp-for="Email" class="fx-label">Email</label>
+            <input asp-for="Email" class="fx-input" type="email" autocomplete="email" placeholder="you@gmail.com" />
+            <span asp-validation-for="Email" class="fx-error"></span>
+            <span class="fx-hint">Use a Gmail address (ends in @("@gmail.com")).</span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="ContactNumber" class="fx-label">Contact number</label>
+            <input asp-for="ContactNumber" class="fx-input" type="tel" autocomplete="tel" placeholder="0917 123 4567" />
+            <span asp-validation-for="ContactNumber" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="Birthdate" class="fx-label">Birthdate</label>
+            <input asp-for="Birthdate" class="fx-input" type="date" />
+            <span asp-validation-for="Birthdate" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="Password" class="fx-label">Password</label>
+            <input asp-for="Password" class="fx-input" autocomplete="new-password" />
+            <span asp-validation-for="Password" class="fx-error"></span>
+            <span class="fx-hint">At least 8 characters.</span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="ConfirmPassword" class="fx-label">Confirm password</label>
+            <input asp-for="ConfirmPassword" class="fx-input" autocomplete="new-password" />
+            <span asp-validation-for="ConfirmPassword" class="fx-error"></span>
+        </div>
+
+        <button type="submit" class="fx-btn fx-btn--primary fx-btn--lg fx-btn--block">Create account</button>
+        <p class="fx-hint fx-auth-form__note">Then pay at the front desk to start your plan.</p>
+    </form>
+
+    <p class="fx-auth-box__alt">Already a member? <a asp-action="Login">Log in</a></p>
 </div>
 
 @section Scripts {

@@ -1,42 +1,62 @@
 @model GymCrudApp.ViewModels.Members.MemberDetailsViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = Model.IsActive ? "Deactivate Member" : "Delete Inactive Member";
+    var isDeactivate = Model.IsActive;
+    ViewData["Title"] = isDeactivate ? "Deactivate member" : "Delete member";
+    var statusLabel = Model.IsActive ? "Active" : "Inactive";
+    var planLabel = string.IsNullOrWhiteSpace(Model.CurrentPlanName) ? "No plan" : Model.CurrentPlanName;
 }
 
-<header class="fx-page-head">
-    <h1>@(Model.IsActive ? "Deactivate member" : "Delete inactive member")</h1>
-</header>
+<div class="fx-min fx-delete-page">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Members</a>
+        <span aria-hidden="true"> / </span>
+        <a asp-action="Details" asp-route-id="@Model.MemberId">@Model.FullName</a>
+        <span aria-hidden="true"> / </span>
+        <span>@(isDeactivate ? "Deactivate" : "Delete")</span>
+    </nav>
 
-<div class="fx-card fx-narrow">
-    <dl class="fx-kv-list">
-        <div class="fx-kv"><dt>Member</dt><dd>@Model.FullName</dd></div>
-        <div class="fx-kv"><dt>Email</dt><dd>@Model.Email</dd></div>
-        <div class="fx-kv"><dt>Contact</dt><dd>@Model.ContactNumber</dd></div>
-        <div class="fx-kv"><dt>Join date</dt><dd>@Model.JoinDate.ToString("MMM d, yyyy")</dd></div>
-        <div class="fx-kv"><dt>Status</dt><dd>@(Model.IsActive ? "Active" : "Inactive")</dd></div>
-    </dl>
-
-    @if (Model.IsActive)
-    {
-        <div class="fx-alert fx-alert--warn">
-            Deactivating locks this member out of the member portal while preserving their payment and attendance history. Are you sure?
+    <header class="fx-page-head">
+        <div class="fx-member-detail__who">
+            <span class="fx-avatar fx-avatar--lg @(Model.IsActive ? "" : "fx-avatar--neutral")" aria-hidden="true">@FlexifyUi.Initials(Model.FullName)</span>
+            <div>
+                <h1>@(isDeactivate ? $"Deactivate {Model.FullName}?" : $"Delete {Model.FullName}?")</h1>
+            </div>
         </div>
-
-        <form asp-action="Delete" asp-route-id="@Model.MemberId" method="post" class="fx-form__actions">
-            <button type="submit" class="fx-btn fx-btn--danger">Confirm deactivation</button>
-            <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-        </form>
-    }
-    else
-    {
-        <div class="fx-alert fx-alert--warn">
-            This permanently deletes the member's profile and login account. Members with existing memberships, payments, or attendance logs cannot be deleted. Are you sure?
+        <div class="fx-page-head__actions">
+            <a asp-action="Details" asp-route-id="@Model.MemberId" class="fx-btn fx-btn--ghost">Cancel</a>
+            @if (isDeactivate)
+            {
+                <form asp-action="Delete" asp-route-id="@Model.MemberId" method="post" class="fx-delete-page__form">
+                    <button type="submit" class="fx-btn fx-btn--danger">Deactivate</button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="PermanentDelete" asp-route-id="@Model.MemberId" method="post" class="fx-delete-page__form">
+                    <button type="submit" class="fx-btn fx-btn--danger">Delete permanently</button>
+                </form>
+            }
         </div>
+    </header>
 
-        <form asp-action="PermanentDelete" asp-route-id="@Model.MemberId" method="post" class="fx-form__actions">
-            <button type="submit" class="fx-btn fx-btn--danger">Permanently delete</button>
-            <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-        </form>
-    }
+    <p class="fx-delete-page__lede">
+        @(isDeactivate
+            ? "They’ll lose portal access. Payments and visits stay on file."
+            : "This deletes their profile and login. Anyone with memberships, payments, or visits can’t be removed.")
+    </p>
+
+    <div class="fx-kpis" style="--n:5">
+        <div class="fx-kpi fx-kpi--wide"><span>Email</span><b>@Model.Email</b></div>
+        <div class="fx-kpi"><span>Contact</span><b>@Model.ContactNumber</b></div>
+        <div class="fx-kpi"><span>Joined</span><b>@Model.JoinDate.ToString("MMM d, yyyy")</b></div>
+        <div class="fx-kpi"><span>Plan</span><b>@planLabel</b></div>
+        <div class="fx-kpi"><span>Status</span><b>@statusLabel</b></div>
+    </div>
+
+    <div class="fx-alert fx-alert--warn" role="status">
+        @(isDeactivate
+            ? "They can’t sign in again until you reactivate the account."
+            : "This can’t be undone.")
+    </div>
 </div>

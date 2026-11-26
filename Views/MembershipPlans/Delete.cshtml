@@ -1,27 +1,46 @@
 @model GymCrudApp.ViewModels.MembershipPlans.MembershipPlanViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Delete Plan";
+    ViewData["Title"] = "Delete plan";
+    var dailyRate = Model.DurationDays > 0 ? Model.PlanPrice / Model.DurationDays : Model.PlanPrice;
+    var daysLabel = Model.DurationDays == 1 ? "1 day" : $"{Model.DurationDays} days";
+    var statusLabel = Model.IsActive ? "Active" : "Inactive";
 }
 
-<header class="fx-page-head">
-    <h1>Delete plan</h1>
-</header>
+<div class="fx-min fx-delete-page">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Plans</a>
+        <span aria-hidden="true"> / </span>
+        <a asp-action="Details" asp-route-id="@Model.PlanId">@Model.PlanName</a>
+        <span aria-hidden="true"> / </span>
+        <span>Delete</span>
+    </nav>
 
-<div class="fx-card fx-narrow">
-    <dl class="fx-kv-list">
-        <div class="fx-kv"><dt>Plan</dt><dd>@Model.PlanName</dd></div>
-        <div class="fx-kv"><dt>Price</dt><dd>@FlexifyUi.Peso(Model.PlanPrice)</dd></div>
-        <div class="fx-kv"><dt>Duration</dt><dd>@Model.DurationDays @(Model.DurationDays == 1 ? "day" : "days")</dd></div>
-        <div class="fx-kv"><dt>Status</dt><dd>@(Model.IsActive ? "Active" : "Inactive")</dd></div>
-    </dl>
+    <header class="fx-page-head">
+        <div class="fx-member-detail__who">
+            <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.PlanName)</span>
+            <div>
+                <h1>Delete @Model.PlanName?</h1>
+            </div>
+        </div>
+        <div class="fx-page-head__actions">
+            <a asp-action="Details" asp-route-id="@Model.PlanId" class="fx-btn fx-btn--ghost">Cancel</a>
+            <form asp-action="Delete" asp-route-id="@Model.PlanId" method="post" class="fx-delete-page__form">
+                <button type="submit" class="fx-btn fx-btn--danger">Delete plan</button>
+            </form>
+        </div>
+    </header>
 
-    <div class="fx-alert fx-alert--warn">
-        Deleting this plan removes it permanently. If members are still subscribed to this plan, deactivate it instead. Are you sure?
+    <p class="fx-delete-page__lede">This removes it from the catalog. Existing memberships keep their dates.</p>
+
+    <div class="fx-kpis" style="--n:4">
+        <div class="fx-kpi"><span>Price</span><b>@FlexifyUi.Peso(Model.PlanPrice)</b></div>
+        <div class="fx-kpi"><span>Duration</span><b>@daysLabel</b></div>
+        <div class="fx-kpi"><span>Daily rate</span><b>@FlexifyUi.Peso(dailyRate)</b></div>
+        <div class="fx-kpi"><span>Status</span><b>@statusLabel</b></div>
     </div>
 
-    <form asp-action="Delete" asp-route-id="@Model.PlanId" method="post" class="fx-form__actions">
-        <button type="submit" class="fx-btn fx-btn--danger">Confirm delete</button>
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-    </form>
+    <div class="fx-alert fx-alert--warn" role="status">
+        Permanent. If members still use this plan, deactivate it instead.
+    </div>
 </div>

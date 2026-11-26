@@ -4,69 +4,72 @@
     ViewData["Title"] = "Membership Plans";
     var isAdmin = User.IsInRole("Admin");
 }
- 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Membership plans</h1>
-        <p class="fx-muted">@Model.Count @(Model.Count == 1 ? "plan" : "plans")</p>
-    </div>
-    @if (isAdmin)
-    {
-        <a asp-action="Create" class="fx-btn fx-btn--primary">+ Add new plan</a>
-    }
-</header>
- 
-<div class="fx-table-wrap">
-    <table class="fx-table">
-        <thead>
-            <tr>
-                <th scope="col">Plan</th>
-                <th scope="col">Duration</th>
-                <th scope="col">Price</th>
-                <th scope="col">Status</th>
-                <th scope="col"><span class="visually-hidden">Actions</span></th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (!Model.Any())
-            {
-                <tr><td colspan="5" class="fx-table__empty">No membership plans yet.</td></tr>
-            }
-            else
-            {
-                @foreach (var plan in Model)
+
+<div class="fx-min">
+    @* Title, plan count, admin-only add button *@
+    <header class="fx-page-head">
+        <div>
+            <h1>Membership plans</h1>
+            <p class="fx-muted">@Model.Count @(Model.Count == 1 ? "plan" : "plans")</p>
+        </div>
+        @if (isAdmin)
+        {
+            <a asp-action="Create" class="fx-btn fx-btn--primary">Add new plan</a>
+        }
+    </header>
+
+    @* Plan list: name with description, duration, price, status, actions *@
+    <div class="fx-table-wrap">
+        <table class="fx-table">
+            <thead>
+                <tr>
+                    <th scope="col">Plan</th>
+                    <th scope="col">Duration</th>
+                    <th scope="col">Price</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="fx-th-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
                 {
-                    <tr>
-                        <td>
-                            <strong>@plan.PlanName</strong>
-                            <span class="fx-sub">@plan.PlanDescription</span>
-                        </td>
-                        <td>@plan.DurationDays @(plan.DurationDays == 1 ? "day" : "days")</td>
-                        <td>@FlexifyUi.Peso(plan.PlanPrice)</td>
-                        <td>
-                            @if (plan.IsActive)
-                            {
-                                <span class="fx-badge fx-badge--active">Active</span>
-                            }
-                            else
-                            {
-                                <span class="fx-badge fx-badge--neutral">Inactive</span>
-                            }
-                        </td>
-                        <td>
-                            <div class="fx-table__actions">
-                                <a asp-action="Details" asp-route-id="@plan.PlanId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View @plan.PlanName">View</a>
-                                @if (isAdmin)
-                                {
-                                    <a asp-action="Edit" asp-route-id="@plan.PlanId" class="fx-btn fx-btn--outline fx-btn--sm" aria-label="Edit @plan.PlanName">Edit</a>
-                                    <a asp-action="Delete" asp-route-id="@plan.PlanId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete @plan.PlanName">Delete</a>
-                                }
-                            </div>
-                        </td>
-                    </tr>
+                    <tr><td colspan="5" class="fx-table__empty">No membership plans yet.</td></tr>
                 }
-            }
-        </tbody>
-    </table>
+                else
+                {
+                    @foreach (var plan in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@plan.PlanName</strong>
+                                <span class="fx-sub">@plan.PlanDescription</span>
+                            </td>
+                            <td style="white-space:nowrap">@plan.DurationDays @(plan.DurationDays == 1 ? "day" : "days")</td>
+                            <td style="white-space:nowrap">@FlexifyUi.Peso(plan.PlanPrice)</td>
+                            <td>
+                                @if (plan.IsActive)
+                                {
+                                    <span class="fx-badge fx-badge--active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="fx-badge fx-badge--neutral">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="fx-table__actions">
+                                    <a asp-action="Details" asp-route-id="@plan.PlanId" class="fx-btn fx-btn--ghost fx-btn--sm" aria-label="View @plan.PlanName">View</a>
+                                    @if (isAdmin)
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@plan.PlanId" class="fx-btn fx-btn--outline fx-btn--sm" aria-label="Edit @plan.PlanName">Edit</a>
+                                        <a asp-action="Delete" asp-route-id="@plan.PlanId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete @plan.PlanName">Delete</a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
- 

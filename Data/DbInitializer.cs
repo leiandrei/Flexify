@@ -218,7 +218,11 @@ namespace GymCrudApp.Data
                 (marco.memberId, DateTime.Today.AddDays(-1).AddHours(12), DateTime.Today.AddDays(-1).AddHours(13).AddMinutes(30)),
                 (isabel.memberId, DateTime.Today.AddDays(-1).AddHours(17), DateTime.Today.AddDays(-1).AddHours(18).AddMinutes(45)),
                 (Camille.memberId, DateTime.Today.AddDays(-1).AddHours(18), DateTime.Today.AddDays(-1).AddHours(19).AddMinutes(20)),
-                // Today (completed sessions + 2 active check-ins on the gym floor)
+                // Today (enough visits to exercise paging + 2 active check-ins on the gym floor)
+                (carlos.memberId, DateTime.Today.AddHours(6).AddMinutes(5), DateTime.Today.AddHours(7).AddMinutes(10)),
+                (bianca.memberId, DateTime.Today.AddHours(6).AddMinutes(31), DateTime.Today.AddHours(7).AddMinutes(20)),
+                (isabel.memberId, DateTime.Today.AddHours(6).AddMinutes(40), DateTime.Today.AddHours(7).AddMinutes(55)),
+                (Camille.memberId, DateTime.Today.AddHours(7).AddMinutes(2), DateTime.Today.AddHours(8).AddMinutes(15)),
                 (carlos.memberId, DateTime.Today.AddHours(7).AddMinutes(30), DateTime.Today.AddHours(9)),
                 (marco.memberId, DateTime.Today.AddHours(10).AddMinutes(15), DateTime.Today.AddHours(11).AddMinutes(45)),
                 (joshua.memberId, DateTime.Now.AddMinutes(-55), null),

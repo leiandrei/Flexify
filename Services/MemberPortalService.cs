@@ -117,19 +117,46 @@ namespace GymCrudApp.Services
                 })
                 .ToListAsync();
 
+            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var nextMonth = monthStart.AddMonths(1);
+            var visitsThisMonth = attendanceLogs.Count(a =>
+                a.CheckIn >= monthStart && a.CheckIn < nextMonth);
+
+            var currentPlanId = latestMembership?.planId;
+            var availablePlans = await _context.MembershipPlans
+                .AsNoTracking()
+                .Where(p => p.isActive)
+                .OrderBy(p => p.planPrice)
+                .ThenBy(p => p.durationDays)
+                .Select(p => new MemberPortalPlanItemViewModel
+                {
+                    PlanId = p.planId,
+                    PlanName = p.planName,
+                    PlanPrice = p.planPrice,
+                    DurationDays = p.durationDays,
+                    PlanDescription = p.planDescription,
+                    IsCurrent = currentPlanId.HasValue && p.planId == currentPlanId.Value
+                })
+                .ToListAsync();
+
             return new MemberPortalViewModel
             {
                 MemberId = member.memberId,
                 FullName = member.fullName,
                 Email = member.userEmail,
                 ContactNumber = member.contactNumber,
+                CurrentPlanId = currentPlanId,
                 PlanName = latestMembership?.Plan?.planName,
+                PlanPrice = latestMembership?.Plan?.planPrice,
+                PlanDurationDays = latestMembership?.Plan?.durationDays,
                 MembershipStatus = status,
                 DaysRemaining = daysRemaining,
                 StartDate = latestMembership?.startDate,
                 ExpiryDate = latestMembership?.endDate,
+                VisitsThisMonth = visitsThisMonth,
                 Payments = payments,
-                AttendanceLogs = attendanceLogs
+                AttendanceLogs = attendanceLogs,
+                AvailablePlans = availablePlans
             };
         }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GymCrudApp.Data;
 using GymCrudApp.Models;
+using GymCrudApp.ViewModels.Members;
 using GymCrudApp.ViewModels.Memberships;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -75,6 +76,8 @@ namespace GymCrudApp.Services
                 MembershipId = m.membershipId,
                 MemberId = m.memberId,
                 MemberName = m.Member?.fullName ?? "Unknown Member",
+                MemberEmail = m.Member?.userEmail ?? string.Empty,
+                ContactNumber = m.Member?.contactNumber ?? string.Empty,
                 PlanName = m.Plan?.planName ?? "Unknown Plan",
                 StartDate = m.startDate,
                 EndDate = m.endDate,
@@ -92,7 +95,50 @@ namespace GymCrudApp.Services
                 .Include(m => m.Plan)
                 .FirstOrDefaultAsync(m => m.membershipId == id);
 
-            return entity == null ? null : MapToDetails(entity);
+            if (entity == null) return null;
+
+            var vm = MapToDetails(entity);
+
+            vm.Payments = await _context.Payments
+                .AsNoTracking()
+                .Where(p => p.membershipId == id)
+                .OrderByDescending(p => p.paymentDate)
+                .ThenByDescending(p => p.paymentId)
+                .Take(20)
+                .Select(p => new MemberPaymentRowViewModel
+                {
+                    PaymentId = p.paymentId,
+                    PaymentDate = p.paymentDate,
+                    PlanName = p.Membership != null && p.Membership.Plan != null
+                        ? p.Membership.Plan.planName
+                        : "—",
+                    PaymentType = p.paymentType,
+                    ReferenceNumber = p.referenceNumber,
+                    RecordedByStaffName = p.RecordedByStaff != null
+                        ? p.RecordedByStaff.fullName
+                        : "—",
+                    Amount = p.amount,
+                    IsVoided = p.isVoided
+                })
+                .ToListAsync();
+
+            var periodStart = entity.startDate.Date;
+            var periodEnd = entity.endDate.Date.AddDays(1);
+            vm.Visits = await _context.Attendance
+                .AsNoTracking()
+                .Where(a => a.memberId == entity.memberId
+                            && a.checkIn >= periodStart
+                            && a.checkIn < periodEnd)
+                .OrderByDescending(a => a.checkIn)
+                .Take(20)
+                .Select(a => new MemberVisitRowViewModel
+                {
+                    CheckIn = a.checkIn,
+                    CheckOut = a.checkOut
+                })
+                .ToListAsync();
+
+            return vm;
         }
 
         public async Task<MembershipDetailsViewModel?> GetLatestForMemberAsync(int memberId)
@@ -232,6 +278,9 @@ namespace GymCrudApp.Services
                 MemberId = entity.memberId,
                 MemberName = entity.Member?.fullName ?? "Unknown Member",
                 MemberEmail = entity.Member?.userEmail ?? string.Empty,
+                MemberContactNumber = entity.Member?.contactNumber ?? string.Empty,
+                MemberJoinDate = entity.Member?.joinDate ?? default,
+                MemberIsActive = entity.Member?.isActive ?? false,
                 PlanId = entity.planId,
                 PlanName = entity.Plan?.planName ?? "Unknown Plan",
                 PlanPrice = entity.Plan?.planPrice ?? 0m,

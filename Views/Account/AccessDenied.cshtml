@@ -1,14 +1,32 @@
 @{
-    ViewData["Title"] = "Access Denied";
+    Layout = null;
+    ViewData["Title"] = "Access denied";
 }
-
-<div class="fx-container">
-    <div class="fx-auth">
-        <div class="fx-card">
-            <span class="fx-badge fx-badge--overdue" style="align-self:flex-start">No access</span>
-            <h1>Access denied</h1>
-            <p class="fx-muted">You do not have permission to view this page.</p>
-            <a asp-controller="Home" asp-action="Index" class="fx-btn fx-btn--outline fx-btn--block">Return home</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · Flexify</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="fx">
+    <div class="fx-denied">
+        <div class="fx-denied__card">
+            <a class="fx-brand fx-denied__brand" asp-controller="Home" asp-action="Index">
+                <partial name="_FxBrand" />
+            </a>
+            <p class="fx-denied__code">403</p>
+            <h1>You don’t have access</h1>
+            <p>This page is for staff or admin accounts. Sign in with a different account, or go back to where you came from.</p>
+            <div class="fx-denied__actions">
+                <a class="fx-btn fx-btn--primary" asp-controller="Account" asp-action="Login">Sign in</a>
+                <a class="fx-btn fx-btn--ghost" asp-controller="Home" asp-action="Index">Back to home</a>
+            </div>
         </div>
     </div>
-</div>
+</body>
+</html>

@@ -42,7 +42,7 @@ namespace GymCrudApp.Services
 
         public async Task<StaffDetailsViewModel?> GetByIdAsync(int id)
         {
-            return await _context.Staff
+            var staff = await _context.Staff
                 .AsNoTracking()
                 .Include(s => s.User)
                 .Where(s => s.StaffID == id)
@@ -57,6 +57,30 @@ namespace GymCrudApp.Services
                     IsActive = s.User != null && s.User.isActive
                 })
                 .FirstOrDefaultAsync();
+
+            if (staff == null) return null;
+
+            staff.Payments = await _context.Payments
+                .AsNoTracking()
+                .Where(p => p.recordedByStaffId == id)
+                .OrderByDescending(p => p.paymentDate)
+                .ThenByDescending(p => p.paymentId)
+                .Take(20)
+                .Select(p => new StaffPaymentRowViewModel
+                {
+                    PaymentId = p.paymentId,
+                    PaymentDate = p.paymentDate,
+                    MemberName = p.Member != null ? p.Member.fullName : "—",
+                    PlanName = p.Membership != null && p.Membership.Plan != null
+                        ? p.Membership.Plan.planName
+                        : "—",
+                    PaymentType = p.paymentType,
+                    Amount = p.amount,
+                    IsVoided = p.isVoided
+                })
+                .ToListAsync();
+
+            return staff;
         }
 
         public async Task<StaffEditViewModel?> GetForEditAsync(int id)

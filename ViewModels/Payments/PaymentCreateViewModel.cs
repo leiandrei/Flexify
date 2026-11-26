@@ -49,6 +49,9 @@ namespace GymCrudApp.ViewModels.Payments
         public SelectList? Plans { get; set; }
         public SelectList? StaffList { get; set; }
 
+        /// <summary>Active plans with price/duration for the sell-a-plan summary.</summary>
+        public List<PaymentPlanChoiceViewModel> PlanChoices { get; set; } = new();
+
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (!string.Equals(PaymentType, "Cash", StringComparison.OrdinalIgnoreCase) &&
@@ -59,5 +62,13 @@ namespace GymCrudApp.ViewModels.Payments
                     new[] { nameof(ReferenceNumber) });
             }
         }
+    }
+
+    public class PaymentPlanChoiceViewModel
+    {
+        public int PlanId { get; set; }
+        public string PlanName { get; set; } = string.Empty;
+        public int DurationDays { get; set; }
+        public decimal PlanPrice { get; set; }
     }
 }

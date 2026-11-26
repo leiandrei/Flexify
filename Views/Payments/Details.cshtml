@@ -1,59 +1,66 @@
 ﻿@model GymCrudApp.ViewModels.Payments.PaymentDetailsViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Payment Details";
+    ViewData["Title"] = $"Payment · {Model.MemberName}";
+    var statusPill = Model.IsVoided ? "is-expired" : "is-active";
+    var statusLabel = Model.IsVoided ? "Voided" : "Completed";
 }
- 
-<header class="fx-page-head">
-    <div class="fx-page-head__title">
-        <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.MemberName)</span>
-        <div class="fx-stack fx-stack--sm" style="gap:4px;min-width:0">
-            <h1>@FlexifyUi.Peso(Model.Amount)</h1>
-            <p class="fx-muted">@Model.MemberName · @Model.MemberEmail</p>
+
+<div class="fx-min fx-member-detail fx-payment-detail">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Payments</a>
+        <span aria-hidden="true"> / </span>
+        <span>#@Model.PaymentId</span>
+    </nav>
+
+    <header class="fx-page-head">
+        <div class="fx-member-detail__who">
+            <span class="fx-avatar fx-avatar--lg" aria-hidden="true">@FlexifyUi.Initials(Model.MemberName)</span>
+            <div>
+                <h1>@FlexifyUi.Peso(Model.Amount)</h1>
+                <p class="fx-muted">
+                    @Model.MemberName · @Model.PlanName · <span class="fx-members__pill @statusPill">@statusLabel</span>
+                </p>
+            </div>
         </div>
-    </div>
-    <div class="fx-row">
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Back to list</a>
-        @if (!Model.IsVoided)
-        {
-            <a asp-action="Void" asp-route-id="@Model.PaymentId" class="fx-btn fx-btn--danger-outline">Void</a>
-            <a asp-action="Edit" asp-route-id="@Model.PaymentId" class="fx-btn fx-btn--primary">Edit payment</a>
-        }
-    </div>
-</header>
- 
-<div class="fx-split">
-    <section class="fx-card fx-split__main" aria-labelledby="payment-heading">
-        <div class="fx-card__head">
-            <h2 id="payment-heading">Payment</h2>
-            @if (Model.IsVoided)
+        <div class="fx-page-head__actions">
+            @if (!Model.IsVoided)
             {
-                <span class="fx-badge fx-badge--overdue">Voided</span>
+                <a asp-action="Void" asp-route-id="@Model.PaymentId" class="fx-btn fx-btn--danger-outline">Void</a>
             }
-            else
+            <a asp-action="Index" class="fx-btn fx-btn--ghost">Back to list</a>
+            @if (!Model.IsVoided)
             {
-                <span class="fx-badge fx-badge--active">Paid</span>
+                <a asp-action="Edit" asp-route-id="@Model.PaymentId" class="fx-btn fx-btn--primary">Edit</a>
             }
         </div>
-        <dl class="fx-kv-list">
-            <div class="fx-kv"><dt>Amount</dt><dd>@FlexifyUi.Peso(Model.Amount)</dd></div>
-            <div class="fx-kv"><dt>Method</dt><dd>@Model.PaymentType</dd></div>
-            <div class="fx-kv"><dt>Reference number</dt><dd>@(Model.ReferenceNumber ?? "-")</dd></div>
-            <div class="fx-kv"><dt>Payment date</dt><dd>@Model.PaymentDate.ToString("MMM d, yyyy")</dd></div>
-            <div class="fx-kv"><dt>Recorded by</dt><dd>@Model.RecordedByStaffName</dd></div>
-        </dl>
-    </section>
- 
-    <section class="fx-card fx-split__side" aria-labelledby="membership-heading">
-        <div class="fx-card__head">
-            <h2 id="membership-heading">Membership</h2>
-        </div>
-        <dl class="fx-kv-list">
-            <div class="fx-kv"><dt>Plan</dt><dd>@Model.PlanName</dd></div>
-            <div class="fx-kv"><dt>Start</dt><dd>@Model.MembershipStartDate.ToString("MMM d, yyyy")</dd></div>
-            <div class="fx-kv"><dt>End</dt><dd>@Model.MembershipEndDate.ToString("MMM d, yyyy")</dd></div>
-        </dl>
-        <a asp-controller="Memberships" asp-action="Details" asp-route-id="@Model.MembershipId" class="fx-btn fx-btn--outline fx-btn--sm">View membership</a>
-    </section>
+    </header>
+
+    <div class="fx-member-detail__split">
+        <section aria-labelledby="pay-h">
+            <h2 id="pay-h">Payment</h2>
+            <dl class="fx-dl">
+                <dt>Amount</dt><dd>₱@Model.Amount.ToString("N2")</dd>
+                <dt>Method</dt><dd>@Model.PaymentType</dd>
+                <dt>Status</dt>
+                <dd><span class="fx-members__pill @statusPill">@statusLabel</span></dd>
+                <dt>Paid on</dt><dd>@Model.PaymentDate.ToString("MMM d, yyyy")</dd>
+                <dt>Reference</dt><dd>@(string.IsNullOrWhiteSpace(Model.ReferenceNumber) ? $"#{Model.PaymentId}" : Model.ReferenceNumber)</dd>
+            </dl>
+        </section>
+        <section aria-labelledby="mem-h">
+            <h2 id="mem-h">Membership</h2>
+            <dl class="fx-dl">
+                <dt>Member</dt>
+                <dd><a asp-controller="Members" asp-action="Details" asp-route-id="@Model.MemberId">@Model.MemberName</a></dd>
+                <dt>Plan</dt><dd>@Model.PlanName</dd>
+                <dt>Coverage</dt>
+                <dd>@Model.MembershipStartDate.ToString("MMM d, yyyy") → @Model.MembershipEndDate.ToString("MMM d, yyyy")</dd>
+                <dt>Recorded by</dt><dd>@Model.RecordedByStaffName</dd>
+            </dl>
+            <p class="fx-hint" style="margin-top:16px">
+                <a asp-controller="Memberships" asp-action="Details" asp-route-id="@Model.MembershipId">View membership</a>
+            </p>
+        </section>
+    </div>
 </div>
- 

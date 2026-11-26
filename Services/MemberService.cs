@@ -20,7 +20,12 @@ namespace GymCrudApp.Services
             _userManager = userManager;
         }
 
-        public async Task<MemberIndexViewModel> GetPagedAsync(string? searchTerm, int page, int pageSize = 10)
+        public async Task<MemberIndexViewModel> GetPagedAsync(
+            string? searchTerm,
+            string? status,
+            string? plan,
+            int page,
+            int pageSize = 10)
         {
             if (page < 1) page = 1;
 
@@ -35,15 +40,10 @@ namespace GymCrudApp.Services
                     m.contactNumber.Contains(term));
             }
 
-            var totalCount = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-            if (totalPages > 0 && page > totalPages) page = totalPages;
-
+            // Status/plan need membership context, so enrich then filter, then page.
             var items = await query
                 .OrderByDescending(m => m.isActive)
                 .ThenBy(m => m.fullName)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
                 .Select(m => new MemberListItemViewModel
                 {
                     MemberId = m.memberId,
@@ -55,10 +55,89 @@ namespace GymCrudApp.Services
                 })
                 .ToListAsync();
 
+            var memberIds = items.Select(i => i.MemberId).ToList();
+            if (memberIds.Count > 0)
+            {
+                var today = DateTime.Today;
+                var memberships = await _context.Memberships
+                    .AsNoTracking()
+                    .Include(ms => ms.Plan)
+                    .Where(ms => memberIds.Contains(ms.memberId))
+                    .ToListAsync();
+
+                foreach (var item in items)
+                {
+                    var latest = memberships
+                        .Where(ms => ms.memberId == item.MemberId)
+                        .OrderByDescending(ms => ms.isActive)
+                        .ThenByDescending(ms => ms.endDate)
+                        .FirstOrDefault();
+
+                    if (latest == null)
+                    {
+                        // Account off → Inactive; account on with no subscription → No plan
+                        item.MembershipStatus = item.IsActive ? "No plan" : "Inactive";
+                        continue;
+                    }
+
+                    var diff = (latest.endDate.Date - today).Days;
+                    item.PlanName = latest.Plan?.planName;
+                    item.MembershipEndDate = latest.endDate;
+                    item.DaysRemaining = diff < 0 ? 0 : diff;
+                    item.MembershipStatus = !latest.isActive ? "Inactive"
+                        : diff < 0 ? "Expired"
+                        : diff <= 7 ? "Expiring"
+                        : "Active";
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                var st = status.Trim();
+                items = items.Where(i => i.MembershipStatus == st).ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(plan))
+            {
+                var planFilter = plan.Trim();
+                if (planFilter == "No plan")
+                {
+                    items = items.Where(i => string.IsNullOrWhiteSpace(i.PlanName)).ToList();
+                }
+                else
+                {
+                    items = items.Where(i => i.PlanName == planFilter).ToList();
+                }
+            }
+
+            var totalCount = items.Count;
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var pageItems = items
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var planChoices = await _context.MembershipPlans
+                .AsNoTracking()
+                .Where(p => p.isActive)
+                .OrderBy(p => p.planPrice)
+                .Select(p => p.planName)
+                .ToListAsync();
+
             return new MemberIndexViewModel
             {
-                Members = items,
+                Members = pageItems,
                 SearchTerm = searchTerm,
+                Status = status,
+                Plan = plan,
+                PlanChoices = planChoices.Select(name => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                {
+                    Value = name,
+                    Text = name,
+                    Selected = plan == name
+                }),
                 CurrentPage = page,
                 PageSize = pageSize,
                 TotalCount = totalCount,
@@ -96,6 +175,41 @@ namespace GymCrudApp.Services
                     : "Active";
             }
 
+            var payments = await _context.Payments
+                .AsNoTracking()
+                .Where(p => p.memberId == id)
+                .OrderByDescending(p => p.paymentDate)
+                .ThenByDescending(p => p.paymentId)
+                .Take(20)
+                .Select(p => new MemberPaymentRowViewModel
+                {
+                    PaymentId = p.paymentId,
+                    PaymentDate = p.paymentDate,
+                    PlanName = p.Membership != null && p.Membership.Plan != null
+                        ? p.Membership.Plan.planName
+                        : "—",
+                    PaymentType = p.paymentType,
+                    ReferenceNumber = p.referenceNumber,
+                    RecordedByStaffName = p.RecordedByStaff != null
+                        ? p.RecordedByStaff.fullName
+                        : "—",
+                    Amount = p.amount,
+                    IsVoided = p.isVoided
+                })
+                .ToListAsync();
+
+            var visits = await _context.Attendance
+                .AsNoTracking()
+                .Where(a => a.memberId == id)
+                .OrderByDescending(a => a.checkIn)
+                .Take(20)
+                .Select(a => new MemberVisitRowViewModel
+                {
+                    CheckIn = a.checkIn,
+                    CheckOut = a.checkOut
+                })
+                .ToListAsync();
+
             return new MemberDetailsViewModel
             {
                 MemberId = member.memberId,
@@ -106,10 +220,16 @@ namespace GymCrudApp.Services
                 Birthdate = member.birthdate,
                 JoinDate = member.joinDate,
                 IsActive = member.isActive,
+                CurrentPlanId = latest?.planId,
                 CurrentPlanName = latest?.Plan?.planName,
+                CurrentPlanPrice = latest?.Plan?.planPrice,
+                PlanDurationDays = latest?.Plan?.durationDays,
+                MembershipStartDate = latest?.startDate,
                 MembershipEndDate = latest?.endDate,
                 DaysRemaining = daysRemaining,
-                MembershipStatus = status
+                MembershipStatus = status,
+                Payments = payments,
+                Visits = visits
             };
         }
 

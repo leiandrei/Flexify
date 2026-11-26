@@ -1,41 +1,39 @@
 @model GymCrudApp.ViewModels.Account.LoginViewModel
 @{
-    ViewData["Title"] = "Login";
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Log in";
+    ViewData["AuthNavText"] = "Create an account";
+    ViewData["AuthNavAction"] = "Register";
 }
 
-<div class="fx-container">
-    <div class="fx-auth">
-        <div class="fx-card">
-            <div class="fx-stack fx-stack--sm">
-                <h1>Welcome back</h1>
-                <p class="fx-muted">Log in to your Flexify account.</p>
-            </div>
+<div class="fx-auth-box">
+    <h1>Welcome back</h1>
+    <p class="fx-auth-box__lead">Members see their plan and days left. Staff go straight to the front desk.</p>
 
-            <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" class="fx-form">
-                <div asp-validation-summary="ModelOnly"></div>
+    <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" class="fx-form fx-auth-form">
+        <div asp-validation-summary="ModelOnly"></div>
 
-                <div class="fx-field">
-                    <label asp-for="Email" class="fx-label"></label>
-                    <input asp-for="Email" class="fx-input" autocomplete="username" />
-                    <span asp-validation-for="Email" class="fx-error"></span>
-                </div>
-
-                <div class="fx-field">
-                    <label asp-for="Password" class="fx-label"></label>
-                    <input asp-for="Password" class="fx-input" autocomplete="current-password" />
-                    <span asp-validation-for="Password" class="fx-error"></span>
-                </div>
-
-                <div class="fx-check">
-                    <input asp-for="RememberMe" />
-                    <label asp-for="RememberMe"></label>
-                </div>
-
-                <button type="submit" class="fx-btn fx-btn--primary fx-btn--lg fx-btn--block">Log in</button>
-            </form>
+        <div class="fx-field">
+            <label asp-for="Email" class="fx-label">Email</label>
+            <input asp-for="Email" class="fx-input" type="email" autocomplete="email" placeholder="you@gmail.com" />
+            <span asp-validation-for="Email" class="fx-error"></span>
         </div>
-        <p class="fx-auth__foot" style="margin-top:20px">New member? <a asp-action="Register">Create an account</a></p>
-    </div>
+
+        <div class="fx-field">
+            <label asp-for="Password" class="fx-label">Password</label>
+            <input asp-for="Password" class="fx-input" autocomplete="current-password" />
+            <span asp-validation-for="Password" class="fx-error"></span>
+        </div>
+
+        <label class="fx-check">
+            <input asp-for="RememberMe" />
+            <span>Keep me logged in</span>
+        </label>
+
+        <button type="submit" class="fx-btn fx-btn--primary fx-btn--lg fx-btn--block">Log in</button>
+    </form>
+
+    <p class="fx-auth-box__alt">New here? <a asp-action="Register">Create an account</a></p>
 </div>
 
 @section Scripts {

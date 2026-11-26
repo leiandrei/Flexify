@@ -1,53 +1,69 @@
 ﻿@model GymCrudApp.ViewModels.Memberships.MembershipEditViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Edit Membership";
+    ViewData["Title"] = "Edit membership";
 }
- 
-<header class="fx-page-head">
-    <h1>Edit membership</h1>
-</header>
- 
-<form asp-action="Edit" method="post" class="fx-card fx-form fx-narrow">
-    <input type="hidden" asp-for="MembershipId" />
-    <div asp-validation-summary="ModelOnly"></div>
- 
-    <div class="fx-field">
-        <label asp-for="MemberId" class="fx-label"></label>
-        <select asp-for="MemberId" asp-items="Model.Members" class="fx-select"></select>
-        <span asp-validation-for="MemberId" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="PlanId" class="fx-label"></label>
-        <select asp-for="PlanId" asp-items="Model.Plans" class="fx-select"></select>
-        <span asp-validation-for="PlanId" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="StartDate" class="fx-label"></label>
-        <input asp-for="StartDate" class="fx-input" />
-        <span asp-validation-for="StartDate" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-field">
-        <label asp-for="EndDate" class="fx-label"></label>
-        <input asp-for="EndDate" class="fx-input" />
-        <span asp-validation-for="EndDate" class="fx-error"></span>
-    </div>
- 
-    <div class="fx-check">
-        <input asp-for="IsActive" />
-        <label asp-for="IsActive"></label>
-    </div>
- 
-    <div class="fx-form__actions">
-        <button type="submit" class="fx-btn fx-btn--primary">Update membership</button>
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Cancel</a>
-    </div>
-</form>
- 
+
+<div class="fx-min fx-edit-page">
+    <nav class="fx-crumbs" aria-label="Breadcrumb">
+        <a asp-action="Index">Memberships</a>
+        <span aria-hidden="true"> / </span>
+        <a asp-action="Details" asp-route-id="@Model.MembershipId">Membership #@Model.MembershipId</a>
+        <span aria-hidden="true"> / </span>
+        <span>Edit</span>
+    </nav>
+
+    <header class="fx-page-head">
+        <div>
+            <h1>Edit membership</h1>
+            <p class="fx-muted">Adjust dates or plan for this period. Prefer Renew when selling the next cycle.</p>
+        </div>
+    </header>
+
+    <form asp-action="Edit" method="post" class="fx-form fx-form--wide">
+        <input type="hidden" asp-for="MembershipId" />
+        <div asp-validation-summary="ModelOnly" class="fx-field--full"></div>
+
+        <div class="fx-field">
+            <label asp-for="MemberId" class="fx-label">Member</label>
+            <select asp-for="MemberId" asp-items="Model.Members" class="fx-select"></select>
+            <span asp-validation-for="MemberId" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="PlanId" class="fx-label">Plan</label>
+            <select asp-for="PlanId" asp-items="Model.Plans" class="fx-select"></select>
+            <span asp-validation-for="PlanId" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="StartDate" class="fx-label">Start date</label>
+            <input asp-for="StartDate" class="fx-input" type="date" />
+            <span asp-validation-for="StartDate" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field">
+            <label asp-for="EndDate" class="fx-label">End date</label>
+            <input asp-for="EndDate" class="fx-input" type="date" />
+            <span class="fx-hint">Must be after the start date.</span>
+            <span asp-validation-for="EndDate" class="fx-error"></span>
+        </div>
+
+        <div class="fx-field fx-field--full">
+            <div class="fx-check">
+                <input asp-for="IsActive" />
+                <label asp-for="IsActive">Active subscription</label>
+            </div>
+            <span class="fx-hint">Off keeps the record but stops it counting as their current plan.</span>
+        </div>
+
+        <div class="fx-form__actions fx-field--full">
+            <button type="submit" class="fx-btn fx-btn--primary">Save changes</button>
+            <a asp-action="Details" asp-route-id="@Model.MembershipId" class="fx-btn fx-btn--ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
- 

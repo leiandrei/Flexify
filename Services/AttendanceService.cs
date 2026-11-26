@@ -20,8 +20,13 @@ namespace GymCrudApp.Services
         public async Task<AttendanceIndexViewModel> GetIndexViewModelAsync(
             string? searchQuery,
             DateTime? filterDate,
+            int page = 1,
+            int pageSize = 10,
             DateTime? asOfNow = null)
         {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+
             var now = asOfNow ?? DateTime.Now;
             var today = now.Date;
             var targetDate = (filterDate ?? today).Date;
@@ -29,7 +34,8 @@ namespace GymCrudApp.Services
             var vm = new AttendanceIndexViewModel
             {
                 SearchQuery = searchQuery,
-                FilterDate = targetDate
+                FilterDate = targetDate,
+                PageSize = pageSize
             };
 
             if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -86,12 +92,24 @@ namespace GymCrudApp.Services
                 }
             }
 
-            vm.Records = await _context.Attendance
+            var dayQuery = _context.Attendance
                 .AsNoTracking()
+                .Where(a => a.checkIn.Date == targetDate);
+
+            vm.TotalCount = await dayQuery.CountAsync();
+            vm.OnFloorCount = await dayQuery.CountAsync(a => a.checkOut == null);
+
+            var totalPages = (int)Math.Ceiling(vm.TotalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+            vm.CurrentPage = page;
+            vm.TotalPages = totalPages;
+
+            vm.Records = await dayQuery
                 .Include(a => a.Member)
-                .Where(a => a.checkIn.Date == targetDate)
                 .OrderBy(a => a.checkOut.HasValue) // Open check-ins appear at the top
                 .ThenByDescending(a => a.checkIn)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(a => new AttendanceListItemViewModel
                 {
                     AttendanceId = a.attendanceId,
@@ -102,6 +120,27 @@ namespace GymCrudApp.Services
                     CheckOut = a.checkOut
                 })
                 .ToListAsync();
+
+            var recordMemberIds = vm.Records.Select(r => r.MemberId).Distinct().ToList();
+            if (recordMemberIds.Count > 0)
+            {
+                var membershipsForRecords = await _context.Memberships
+                    .AsNoTracking()
+                    .Include(ms => ms.Plan)
+                    .Where(ms => recordMemberIds.Contains(ms.memberId))
+                    .ToListAsync();
+
+                foreach (var record in vm.Records)
+                {
+                    var plan = membershipsForRecords
+                        .Where(ms => ms.memberId == record.MemberId)
+                        .OrderByDescending(ms => ms.isActive)
+                        .ThenByDescending(ms => ms.endDate)
+                        .Select(ms => ms.Plan?.planName)
+                        .FirstOrDefault();
+                    record.PlanName = string.IsNullOrWhiteSpace(plan) ? "—" : plan;
+                }
+            }
 
             return vm;
         }

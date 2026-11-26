@@ -1,150 +1,244 @@
 ﻿@model GymCrudApp.ViewModels.Attendance.AttendanceIndexViewModel
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "Attendance";
+    ViewData["Title"] = "Check-in";
     var isAdmin = User.IsInRole("Admin");
     var isToday = Model.FilterDate.Date == DateTime.Today;
+    var dayLabel = Model.FilterDate.ToString("dddd, MMMM d, yyyy");
+    var floorLabel = Model.OnFloorCount == 1 ? "1 on the floor" : $"{Model.OnFloorCount} on the floor";
 }
- 
-<header class="fx-page-head">
-    <div class="fx-stack fx-stack--sm">
-        <h1>Attendance</h1>
-        <p class="fx-muted">Search a member to check them in.</p>
-    </div>
-</header>
- 
-@* 1. Member search for check-in *@
-<form asp-action="Index" method="get" class="fx-search-bar" role="search">
-    <div class="fx-field">
-        <label class="fx-label" for="searchQuery">Find member</label>
-        <input type="text" id="searchQuery" name="searchQuery" value="@Model.SearchQuery" class="fx-input" placeholder="Name, email, or phone" />
-    </div>
-    <input type="hidden" name="filterDate" value="@Model.FilterDate.ToString("yyyy-MM-dd")" />
-    <button type="submit" class="fx-btn fx-btn--primary">Search</button>
+
+<div class="fx-min fx-checkin">
+    <header class="fx-page-head">
+        <div>
+            <h1>Check-in</h1>
+            <p class="fx-muted">@dayLabel · @floorLabel</p>
+        </div>
+    </header>
+
+    @* Big search: auto-applies while typing; front desk types here all day *@
+    <form asp-action="Index" method="get" id="checkinSearchForm" class="fx-checkin__search" role="search">
+        <label class="visually-hidden" for="searchQuery">Search member by name or phone</label>
+        <div class="fx-checkin__search-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input type="text"
+                   id="searchQuery"
+                   name="searchQuery"
+                   value="@Model.SearchQuery"
+                   class="fx-input"
+                   placeholder="Search member by name or phone"
+                   autocomplete="off"
+                   autofocus />
+        </div>
+        <input type="hidden" name="filterDate" value="@Model.FilterDate.ToString("yyyy-MM-dd")" />
+        @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
+        {
+            <a asp-action="Index" asp-route-filterDate="@Model.FilterDate.ToString("yyyy-MM-dd")" class="fx-btn fx-btn--ghost">Clear</a>
+        }
+    </form>
+
     @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
     {
-        <a asp-action="Index" class="fx-btn fx-btn--ghost">Clear</a>
-    }
-</form>
- 
-@if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
-{
-    <section class="fx-card" aria-labelledby="results-heading">
-        <div class="fx-card__head">
-            <h2 id="results-heading">Search results</h2>
-        </div>
-        @if (!Model.MatchingMembers.Any())
-        {
-            <p class="fx-muted">No members match "@Model.SearchQuery".</p>
-        }
-        else
-        {
-            <div class="fx-kv-list">
+        <section class="fx-checkin__results" aria-label="Search results">
+            @if (!Model.MatchingMembers.Any())
+            {
+                <p class="fx-muted">No members match "@Model.SearchQuery".</p>
+            }
+            else
+            {
                 @foreach (var m in Model.MatchingMembers)
                 {
-                    <div class="fx-kv">
-                        <div class="fx-list-row">
+                    var detail = BuildMemberDetail(m);
+                    <div class="fx-checkin__result">
+                        <div class="fx-checkin__who">
                             <span class="fx-avatar" aria-hidden="true">@FlexifyUi.Initials(m.FullName)</span>
-                            <div class="fx-list-row__body">
-                                <strong>@m.FullName</strong>
-                                <span>@(m.PlanName ?? "No plan") @(m.ExpiryDate.HasValue ? "· until " + m.ExpiryDate.Value.ToString("MMM d, yyyy") : "")</span>
+                            <div>
+                                <b>@m.FullName</b>
+                                <small>@detail</small>
                             </div>
                         </div>
-                        <div class="fx-row">
-                            <span class="@FlexifyUi.StatusBadge(m.MembershipStatus)">@m.MembershipStatus</span>
-                            @if (m.HasOpenCheckInToday)
-                            {
-                                <span class="fx-badge fx-badge--neutral">Already in gym</span>
-                            }
-                            else if (m.CanCheckIn)
-                            {
-                                <form asp-action="CheckIn" method="post">
-                                    <input type="hidden" name="memberId" value="@m.MemberId" />
-                                    <input type="hidden" name="searchQuery" value="@Model.SearchQuery" />
-                                    <button type="submit" class="fx-btn fx-btn--primary fx-btn--sm">Check in</button>
-                                </form>
-                            }
-                            else
-                            {
-                                <span class="fx-muted">Renew membership first</span>
-                            }
-                        </div>
+                        <span class="@FlexifyUi.StatusBadge(m.MembershipStatus)">@m.MembershipStatus</span>
+                        @if (m.HasOpenCheckInToday)
+                        {
+                            <span class="fx-badge fx-badge--neutral">Already in gym</span>
+                        }
+                        else if (m.CanCheckIn)
+                        {
+                            <form asp-action="CheckIn" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="memberId" value="@m.MemberId" />
+                                <input type="hidden" name="searchQuery" value="@Model.SearchQuery" />
+                                <button type="submit" class="fx-btn fx-btn--primary">Check in</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a asp-controller="Members" asp-action="Details" asp-route-id="@m.MemberId" class="fx-checkin__renew">Renew</a>
+                            <button type="button" class="fx-btn fx-btn--primary" disabled title="Membership expired. Renew first.">Check in</button>
+                        }
                     </div>
                 }
-            </div>
-        }
-    </section>
-}
- 
-@* 2. Attendance log for one day *@
-<section class="fx-stack fx-stack--sm" aria-labelledby="log-heading">
-    <div class="fx-page-head">
-        <h2 id="log-heading">@(isToday ? "Today's visits" : "Visits on " + Model.FilterDate.ToString("MMM d, yyyy"))</h2>
-        <form asp-action="Index" method="get" class="fx-row">
-            <label class="fx-label" for="filterDate">Date</label>
-            <input type="date" id="filterDate" name="filterDate" value="@Model.FilterDate.ToString("yyyy-MM-dd")" class="fx-input" />
-            <button type="submit" class="fx-btn fx-btn--outline fx-btn--sm">Show</button>
-        </form>
-    </div>
- 
-    <div class="fx-table-wrap">
-        <table class="fx-table">
-            <thead>
-                <tr>
-                    <th scope="col">Member</th>
-                    <th scope="col">Check in</th>
-                    <th scope="col">Check out</th>
-                    <th scope="col">Duration</th>
-                    <th scope="col"><span class="visually-hidden">Actions</span></th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!Model.Records.Any())
+            }
+        </section>
+    }
+
+    @* Day log: date auto-applies; open visits show Check out *@
+    <section class="fx-checkin__log" aria-labelledby="log-heading">
+        <div class="fx-checkin__log-head">
+            <h2 id="log-heading">@(isToday ? "Today's visits" : "Visits on " + Model.FilterDate.ToString("MMM d, yyyy"))</h2>
+            <form asp-action="Index" method="get" id="checkinDateForm" class="fx-checkin__date">
+                <label class="visually-hidden" for="filterDate">Date</label>
+                <input type="date" id="filterDate" name="filterDate" value="@Model.FilterDate.ToString("yyyy-MM-dd")" class="fx-input" />
+                @if (!string.IsNullOrWhiteSpace(Model.SearchQuery))
                 {
-                    <tr><td colspan="5" class="fx-table__empty">No visits recorded for this day.</td></tr>
+                    <input type="hidden" name="searchQuery" value="@Model.SearchQuery" />
+                }
+            </form>
+        </div>
+
+        <div class="fx-table-wrap">
+            <table class="fx-table fx-checkin__table">
+                <thead>
+                    <tr>
+                        <th scope="col">Time in</th>
+                        <th scope="col">Member</th>
+                        <th scope="col">Plan</th>
+                        <th scope="col">Time out</th>
+                        <th scope="col" class="fx-th-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Records.Any())
+                    {
+                        <tr><td colspan="5" class="fx-table__empty">No visits recorded for this day.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var r in Model.Records)
+                        {
+                            <tr>
+                                <td>@r.CheckIn.ToString("h:mm tt")</td>
+                                <td>@r.MemberName</td>
+                                <td>@r.PlanName</td>
+                                <td>@(r.IsOpen ? "" : r.CheckOut!.Value.ToString("h:mm tt"))</td>
+                                <td>
+                                    <div class="fx-table__actions">
+                                        @if (r.IsOpen)
+                                        {
+                                            <form asp-action="CheckOut" method="post" class="fx-inline-form">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="attendanceId" value="@r.AttendanceId" />
+                                                <input type="hidden" name="filterDate" value="@Model.FilterDate.ToString("yyyy-MM-dd")" />
+                                                <input type="hidden" name="page" value="@Model.CurrentPage" />
+                                                <button type="submit" class="fx-btn fx-btn--outline fx-btn--sm fx-checkin__checkout-btn">Check out</button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="fx-btn fx-btn--outline fx-btn--sm fx-checkin__checkout-btn" disabled title="Already checked out">Check out</button>
+                                        }
+                                        @if (isAdmin)
+                                        {
+                                            <a asp-action="Delete" asp-route-id="@r.AttendanceId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete visit by @r.MemberName">Delete</a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="fx-members__pager" aria-label="Visits pages">
+                @if (Model.HasPreviousPage)
+                {
+                    <a asp-action="Index"
+                       asp-route-searchQuery="@Model.SearchQuery"
+                       asp-route-filterDate="@Model.FilterDate.ToString("yyyy-MM-dd")"
+                       asp-route-page="@(Model.CurrentPage - 1)">Previous</a>
                 }
                 else
                 {
-                    @foreach (var r in Model.Records)
-                    {
-                        <tr>
-                            <td>
-                                <strong>@r.MemberName</strong>
-                                <span class="fx-sub">@r.MemberEmail</span>
-                            </td>
-                            <td>@r.CheckIn.ToString("h:mm tt")</td>
-                            <td>@(r.CheckOut?.ToString("h:mm tt") ?? "-")</td>
-                            <td>
-                                @if (r.IsOpen)
-                                {
-                                    <span class="fx-badge fx-badge--active">In gym</span>
-                                }
-                                else
-                                {
-                                    @r.DurationDisplay
-                                }
-                            </td>
-                            <td>
-                                <div class="fx-table__actions">
-                                    @if (r.IsOpen)
-                                    {
-                                        <form asp-action="CheckOut" method="post">
-                                            <input type="hidden" name="attendanceId" value="@r.AttendanceId" />
-                                            <input type="hidden" name="filterDate" value="@Model.FilterDate.ToString("yyyy-MM-dd")" />
-                                            <button type="submit" class="fx-btn fx-btn--outline fx-btn--sm">Check out</button>
-                                        </form>
-                                    }
-                                    @if (isAdmin)
-                                    {
-                                        <a asp-action="Delete" asp-route-id="@r.AttendanceId" class="fx-btn fx-btn--danger-outline fx-btn--sm" aria-label="Delete visit by @r.MemberName">Delete</a>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                    }
+                    <span aria-disabled="true">Previous</span>
                 }
-            </tbody>
-        </table>
-    </div>
-</section>
- 
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <a asp-action="Index"
+                       asp-route-searchQuery="@Model.SearchQuery"
+                       asp-route-filterDate="@Model.FilterDate.ToString("yyyy-MM-dd")"
+                       asp-route-page="@i"
+                       aria-current="@(i == Model.CurrentPage ? "page" : null)">@i</a>
+                }
+
+                @if (Model.HasNextPage)
+                {
+                    <a asp-action="Index"
+                       asp-route-searchQuery="@Model.SearchQuery"
+                       asp-route-filterDate="@Model.FilterDate.ToString("yyyy-MM-dd")"
+                       asp-route-page="@(Model.CurrentPage + 1)">Next</a>
+                }
+                else
+                {
+                    <span aria-disabled="true">Next</span>
+                }
+            </nav>
+        }
+
+        @if (isAdmin)
+        {
+            <p class="fx-checkin__note">Delete is admin only.</p>
+        }
+    </section>
+</div>
+
+@section Scripts {
+<script>
+(() => {
+  const searchForm = document.getElementById('checkinSearchForm');
+  const searchInput = document.getElementById('searchQuery');
+  if (searchForm && searchInput) {
+    let timer = null;
+    const submitSearch = () => {
+      for (const el of searchForm.querySelectorAll('input')) {
+        if (el.name === 'searchQuery' && !(el.value || '').trim()) el.disabled = true;
+      }
+      searchForm.requestSubmit ? searchForm.requestSubmit() : searchForm.submit();
+    };
+    searchInput.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(submitSearch, 350);
+    });
+  }
+
+  const dateForm = document.getElementById('checkinDateForm');
+  const dateInput = document.getElementById('filterDate');
+  if (dateForm && dateInput) {
+    dateInput.addEventListener('change', () => {
+      dateForm.requestSubmit ? dateForm.requestSubmit() : dateForm.submit();
+    });
+  }
+})();
+</script>
+}
+
+@functions {
+    private static string BuildMemberDetail(GymCrudApp.ViewModels.Attendance.MemberCheckInSearchResultViewModel m)
+    {
+        var phone = string.IsNullOrWhiteSpace(m.ContactNumber) ? m.Email : m.ContactNumber;
+        var plan = string.IsNullOrWhiteSpace(m.PlanName) ? "No plan" : m.PlanName;
+        if (m.ExpiryDate.HasValue)
+        {
+            var daysLeft = (m.ExpiryDate.Value.Date - DateTime.Today).Days;
+            if (daysLeft < 0)
+                return $"{phone} · {plan} ended {m.ExpiryDate.Value:MMM d}";
+            if (daysLeft == 0)
+                return $"{phone} · {plan}, ends today";
+            return $"{phone} · {plan}, {daysLeft} day{(daysLeft == 1 ? "" : "s")} left";
+        }
+        return $"{phone} · {plan}";
+    }
+}

@@ -18,9 +18,9 @@ namespace GymCrudApp.Controllers
 
         // GET: /Attendance
         [HttpGet]
-        public async Task<IActionResult> Index(string? searchQuery, DateTime? filterDate)
+        public async Task<IActionResult> Index(string? searchQuery, DateTime? filterDate, int page = 1)
         {
-            var vm = await _attendanceService.GetIndexViewModelAsync(searchQuery, filterDate);
+            var vm = await _attendanceService.GetIndexViewModelAsync(searchQuery, filterDate, page);
             return View(vm);
         }
 
@@ -50,7 +50,7 @@ namespace GymCrudApp.Controllers
         // POST: /Attendance/CheckOut
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CheckOut(int attendanceId, DateTime? filterDate)
+        public async Task<IActionResult> CheckOut(int attendanceId, DateTime? filterDate, int page = 1)
         {
             var (success, errorMessage) = await _attendanceService.CheckOutAsync(attendanceId);
 
@@ -63,7 +63,11 @@ namespace GymCrudApp.Controllers
                 TempData["SuccessMessage"] = "Member checked out successfully.";
             }
 
-            return RedirectToAction(nameof(Index), new { filterDate = filterDate?.ToString("yyyy-MM-dd") });
+            return RedirectToAction(nameof(Index), new
+            {
+                filterDate = filterDate?.ToString("yyyy-MM-dd"),
+                page
+            });
         }
 
         // GET: /Attendance/Delete/5 (Admin Only)

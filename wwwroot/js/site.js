@@ -68,10 +68,50 @@
         const askUrl = chatRoot.dataset.askUrl || '/Chatbot/Ask';
         let promptsLoaded = false;
 
+        const formatChatHtml = (text) => {
+            const escaped = String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            const withBold = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            const lines = withBold.split(/\r?\n/);
+            let html = '';
+            let inList = false;
+            const closeList = () => {
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+            };
+            lines.forEach((line) => {
+                const bullet = line.match(/^\s*[-•]\s+(.+)$/);
+                if (bullet) {
+                    if (!inList) {
+                        html += '<ul class="fx-chat__list">';
+                        inList = true;
+                    }
+                    html += `<li>${bullet[1]}</li>`;
+                    return;
+                }
+                closeList();
+                if (line.trim() === '') {
+                    html += '<div class="fx-chat__break"></div>';
+                    return;
+                }
+                html += `<p class="fx-chat__p">${line}</p>`;
+            });
+            closeList();
+            return html || withBold;
+        };
+
         const appendMessage = (text, sender) => {
             const bubble = document.createElement('div');
             bubble.className = `fx-chat__msg fx-chat__msg--${sender}`;
-            bubble.textContent = text;
+            if (sender === 'bot') {
+                bubble.innerHTML = formatChatHtml(text);
+            } else {
+                bubble.textContent = text;
+            }
             messagesEl.appendChild(bubble);
             messagesEl.scrollTop = messagesEl.scrollHeight;
             return bubble;
@@ -82,7 +122,7 @@
             if (!Array.isArray(prompts) || prompts.length === 0) {
                 return;
             }
-            prompts.slice(0, 4).forEach((promptText) => {
+            prompts.slice(0, 3).forEach((promptText) => {
                 const chip = document.createElement('button');
                 chip.type = 'button';
                 chip.className = 'fx-chat__chip';
@@ -109,6 +149,7 @@
 
         const setOpen = (isOpen) => {
             chatWindow.hidden = !isOpen;
+            chatRoot.classList.toggle('is-open', isOpen);
             toggleBtn.setAttribute('aria-expanded', String(isOpen));
             if (isOpen) {
                 loadInitialPrompts();
@@ -140,14 +181,15 @@
                 });
 
                 const data = await res.json();
-                typingBubble.textContent = data.reply || data.Reply || 'Sorry, I could not generate a response.';
+                const reply = data.reply || data.Reply || 'Sorry, I could not generate a response.';
+                typingBubble.innerHTML = formatChatHtml(reply);
 
                 const nextPrompts = data.suggestedPrompts || data.SuggestedPrompts;
                 if (Array.isArray(nextPrompts) && nextPrompts.length > 0) {
                     renderPrompts(nextPrompts);
                 }
             } catch {
-                typingBubble.textContent = 'Unable to reach the assistant right now. Please try again.';
+                typingBubble.innerHTML = formatChatHtml('Unable to reach the assistant right now. Please try again.');
             } finally {
                 chatInput.disabled = false;
                 sendBtn.disabled = false;

@@ -36,19 +36,17 @@ namespace GymCrudApp.Services
             {
                 return new[]
                 {
-                    "When does my membership expire?",
-                    "Show my latest payment",
-                    "How many times have I checked in recently?",
-                    "What membership plans do you offer?"
+                    "When do I expire?",
+                    "Latest payment",
+                    "Compare plans"
                 };
             }
 
             return new[]
             {
-                "What membership plans do you offer?",
-                "What are your operating hours?",
-                "What payment methods do you accept?",
-                "How does membership renewal work?"
+                "Gym hours",
+                "Compare plans",
+                "How to renew"
             };
         }
 
@@ -56,10 +54,9 @@ namespace GymCrudApp.Services
         {
             return new[]
             {
-                "How many active members do we have?",
-                "Who has memberships expiring soon?",
-                "What is our revenue this month?",
-                "How many check-ins do we have today?"
+                "Active members",
+                "Expiring soon",
+                "Today’s check-ins"
             };
         }
 
@@ -140,18 +137,27 @@ namespace GymCrudApp.Services
             }
 
             var plansText = landingData.Plans.Any()
-                ? string.Join("; ", landingData.Plans.Select(p => $"{p.PlanName} = ₱{p.PlanPrice:N2} for {p.DurationDays} days"))
-                : "No active plans published online.";
+                ? string.Join("\n", landingData.Plans.Select(p =>
+                    $"- {p.PlanName}: ₱{p.PlanPrice:N0} · {p.DurationDays} {(p.DurationDays == 1 ? "day" : "days")}"))
+                : "- No active plans published online.";
 
             var systemPrompt = $@"
 You are the virtual front-desk assistant for {landingData.FacilityName}.
-Answer concisely (2-4 sentences max), accurately, and politely using ONLY the verified facts below. Never invent prices, policies, or personal data.
+Be accurate and polite. Use ONLY the verified facts below. Never invent prices, policies, or personal data.
+
+FORMAT (important):
+- Prefer short lines and bullet lists over long paragraphs.
+- For plans, hours, or multiple facts: use a one-line intro, then markdown bullets like ""- Item"".
+- Put each plan on its own bullet: ""- Plan name: ₱price · N days"".
+- Keep replies scannable. Avoid stuffing many facts into one sentence with semicolons.
+- Do not use tables or HTML.
 
 FACILITY INFO:
 - Address: {landingData.FacilityAddress}
 - Operating Hours: {landingData.OperatingHours}
 - Contact: {landingData.ContactPhone} | {landingData.ContactEmail}
-- Active Membership Plans: {plansText}
+- Active Membership Plans:
+{plansText}
 - Accepted Payments: Cash, GCash, Maya, Bank Transfer, and Card (non-cash payments require a reference number).
 - Renewal Rule: Early renewals start the day after the current expiration date so no paid days are lost; expired plans start on the renewal date.
 - Amenities & Rules: Day-use lockers, showers, free member Wi-Fi, 2-hour validated parking, minimum age 16 (parental consent for 16-17), closed-toe athletic shoes required.
@@ -333,28 +339,28 @@ FACILITY INFO:
             if (q.Contains("hour") || q.Contains("open") || q.Contains("close") || q.Contains("schedule") || q.Contains("time"))
             {
                 return ("Fallback.Hours", false,
-                    $"Our operating hours are {landingData.OperatingHours}. You can also reach us at {landingData.ContactPhone}.");
+                    $"Here’s when we’re open:\n- {landingData.OperatingHours}\n\nCall or text {landingData.ContactPhone} if you need anything else.");
             }
 
             if (q.Contains("pay") || q.Contains("gcash") || q.Contains("maya") || q.Contains("cash") || q.Contains("card") || q.Contains("bank"))
             {
                 return ("Fallback.PaymentMethods", false,
-                    "We accept Cash, GCash, Maya, Bank Transfer, and Card. Non-cash payments require a transaction reference number at checkout.");
+                    "We accept:\n- Cash\n- GCash\n- Maya\n- Bank Transfer\n- Card\n\nNon-cash payments need a reference number at checkout.");
             }
 
             if (q.Contains("renew") || q.Contains("extend"))
             {
                 return ("Fallback.Renewal", false,
-                    "Early renewals begin the day after your current expiration date so you never lose paid days; expired plans start on the renewal date.");
+                    "How renewal works:\n- Early renewals start the day after your current end date (no lost days).\n- Expired plans start on the renewal date.");
             }
 
             if (q.Contains("plan") || q.Contains("price") || q.Contains("rate") || q.Contains("cost") || q.Contains("fee") || q.Contains("offer"))
             {
-                return ("Fallback.Plans", false, $"Current membership plans: {plansText}.");
+                return ("Fallback.Plans", false, $"Here are the current plans:\n{plansText}");
             }
 
             return ("Fallback.General", false,
-                $"Current plans: {plansText}. Operating hours: {landingData.OperatingHours}. Contact: {landingData.ContactPhone}.");
+                $"Here’s the quick overview:\n\nPlans:\n{plansText}\n\nHours:\n- {landingData.OperatingHours}\n\nContact:\n- {landingData.ContactPhone}");
         }
         
         public IReadOnlyList<string> GetDefaultSuggestedPrompts(ClaimsPrincipal user)

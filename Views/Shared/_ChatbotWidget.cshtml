@@ -1,15 +1,13 @@
 <div id="fxChatbot" class="fx-chat" data-prompts-url="@Url.Action("Prompts", "Chatbot")" data-ask-url="@Url.Action("Ask", "Chatbot")">
-    <section id="fxChatWindow" class="fx-chat__window" role="dialog" aria-label="Flexify Gym Assistant" hidden>
+    <section id="fxChatWindow" class="fx-chat__window" role="dialog" aria-label="Flexify Assistant" hidden>
         <header class="fx-chat__head">
-            <div class="fx-chat__identity">
-                <img src="~/assets/gym-robot-logo-chat-bubble-flexify-v2.png" alt="Flexify Assistant" class="fx-chat__avatar" />
-                <div>
-                    <strong class="fx-chat__title">Flexify Assistant</strong>
-                    <span class="fx-chat__status">Online · Ask about plans &amp; memberships</span>
-                </div>
+            <img src="~/assets/gym-robot-logo-chat-bubble-flexify-v2.png" alt="" class="fx-chat__avatar" />
+            <div class="fx-chat__who">
+                <strong class="fx-chat__title">Flexify Assistant</strong>
+                <span class="fx-chat__status"><i class="fx-chat__dot" aria-hidden="true"></i> Online · plans &amp; hours</span>
             </div>
             <button type="button" id="fxChatClose" class="fx-chat__close" aria-label="Close chat">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
                     <path d="M18 6 6 18" /><path d="m6 6 12 12" />
                 </svg>
             </button>
@@ -17,22 +15,28 @@
 
         <div id="fxChatMessages" class="fx-chat__messages" aria-live="polite">
             <div class="fx-chat__msg fx-chat__msg--bot">
-                Hi! I’m the Flexify Assistant. Ask me about membership plans, pricing, gym hours, or your active subscription.
+                <p class="fx-chat__p">Hi — ask about plans, pricing, hours, or your membership.</p>
             </div>
         </div>
 
-        <div id="fxChatPrompts" class="fx-chat__prompts" aria-label="Suggested questions"></div>
+        <div class="fx-chat__foot">
+            <div id="fxChatPrompts" class="fx-chat__prompts" aria-label="Suggested questions"></div>
 
-        <form id="fxChatForm" class="fx-chat__form" autocomplete="off">
-            <label for="fxChatInput" class="visually-hidden">Type your question</label>
-            <input type="text"
-                   id="fxChatInput"
-                   class="fx-input fx-chat__input"
-                   maxlength="500"
-                   placeholder="Ask a question..."
-                   required />
-            <button type="submit" id="fxChatSend" class="fx-btn fx-btn--primary fx-btn--sm" aria-label="Send message">Send</button>
-        </form>
+            <form id="fxChatForm" class="fx-chat__form" autocomplete="off">
+                <label for="fxChatInput" class="visually-hidden">Ask a question</label>
+                <input type="text"
+                       id="fxChatInput"
+                       class="fx-chat__input"
+                       maxlength="500"
+                       placeholder="Ask anything…"
+                       required />
+                <button type="submit" id="fxChatSend" class="fx-chat__send" aria-label="Send message">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+                    </svg>
+                </button>
+            </form>
+        </div>
     </section>
 
     <button type="button"
@@ -42,5 +46,6 @@
             aria-controls="fxChatWindow"
             aria-label="Open Flexify Assistant">
         <img src="~/assets/gym-robot-logo-chat-bubble-flexify-v2.png" alt="" class="fx-chat__launcher-img" />
+        Ask Flexify
     </button>
 </div>
